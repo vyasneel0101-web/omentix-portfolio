@@ -1,0 +1,8 @@
+# Unused raw production material — not referenced by the live site
+animation_frames/
+Video Project 5.mp4
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Omentix Tech — Web, Apps & AI Automation</title>
+  <meta name="description" content="Omentix Tech is a software studio in Bhuj, Kutch. We build web platforms, mobile apps and AI automation for teams who'd rather ship than talk about shipping." />
+
+  <!-- Type system: Clash Display (display) · Satoshi (text) · Sentient (italic accent) · JetBrains Mono (meta)
+       Scroll-film only: Zodiak (beat lines + italic accent) · Bricolage Grotesque (node labels) -->
+  <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=sentient@400,400i,500i&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=zodiak@700,700i&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="is-loading">
+
+  <!-- ============ FILM GRAIN ============ -->
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ============ CUSTOM CURSOR ============ -->
+  <div class="cursor" aria-hidden="true">
+    <div class="cursor__dot"></div>
+    <div class="cursor__ring"><span class="cursor__label"></span></div>
+  </div>
+
+  <!-- ============ SCROLL PROGRESS ============ -->
+  <div class="progress" aria-hidden="true"><span class="progress__bar"></span></div>
+
+  <!-- ============ PRELOADER ============ -->
+  <div class="loader" id="preloader">
+    <div class="loader__inner">
+      <div class="loader__top">
+        <span class="meta">Omentix Tech</span>
+        <span class="meta">Bhuj, Kutch</span>
+      </div>
+      <div class="loader__count">
+        <span class="loader__num" id="progress-text">00</span>
+        <span class="loader__pct">%</span>
+      </div>
+      <div class="loader__track"><span class="loader__fill" id="progress-bar"></span></div>
+      <div class="loader__bottom">
+        <span class="meta loader__status">Growing the root system…</span>
+        <span class="meta">Web · Apps · AI</span>
+      </div>
+    </div>
+  </div>
+  <div class="curtain" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+
+  <!-- ============ NAV ============ -->
+  <header class="nav" id="nav">
+    <a class="nav__brand" href="#hero" data-cursor="home">
+      <img src="logo.svg" alt="" class="nav__mark" />
+      <span class="nav__word">Omentix<sup>®</sup></span>
+    </a>
+    <nav class="nav__links">
+      <a href="#work" class="navlink"><span data-text="Work">Work</span></a>
+      <a href="#story-section" class="navlink"><span data-text="Studio">Studio</span></a>
+      <a href="#contact" class="navlink"><span data-text="Contact">Contact</span></a>
+    </nav>
+    <a href="#contact" class="nav__cta magnetic" data-cursor="say hi">
+      <span class="nav__cta-dot"></span>
+      <span>Start a project</span>
+    </a>
+  </header>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="hero">
+
+    <!-- printed ground: column rules · halftone field · violet ink blots -->
+    <div class="hero__ground" aria-hidden="true">
+      <span class="hero__cols"></span>
+      <span class="hero__dots"></span>
+      <span class="hero__blot hero__blot--a"></span>
+      <span class="hero__blot hero__blot--b"></span>
+    </div>
+
+    <!-- margin rail — set sideways like a press sheet edge -->
+    <span class="hero__rail" aria-hidden="true">23.2419°N&nbsp;&nbsp;69.6669°E</span>
+
+    <div class="hero__grid">
+
+      <div class="hero__row hero__row--top">
+        <span class="meta meta--live"><i class="pulse"></i>Available for new projects</span>
+        <span class="meta hero__edition">Independent software studio</span>
+        <span class="meta">Est. 2025 &nbsp;/&nbsp; Bhuj → Everywhere</span>
+      </div>
+
+      <h1 class="hero__title">
+        <span class="line"><span class="line__in">We engineer</span></span>
+        <span class="line"><span class="line__in">digital <em class="grav">gravity</em></span></span>
+        <svg class="hero__stroke" viewBox="0 0 620 26" fill="none" aria-hidden="true" preserveAspectRatio="none">
+          <path d="M4 17.5C74 9.5 158 5.5 261 5.5c118 0 213 4 355 12.5" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+      </h1>
+
+      <div class="hero__row hero__row--bottom">
+
+        <div class="hero__col">
+          <p class="hero__lede">Web platforms, mobile apps and AI automation — engineered so small teams move like big ones.</p>
+          <a href="#contact" class="hero__cta magnetic" data-cursor="say hi">
+            <span class="hero__cta-label">Start a project</span>
+            <span class="hero__cta-arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+
+        <ol class="hero__index">
+          <li class="hero__item"><span class="hero__item-n">01</span><span class="hero__item-t">Web&nbsp;Development</span></li>
+          <li class="hero__item"><span class="hero__item-n">02</span><span class="hero__item-t">App&nbsp;Development</span></li>
+          <li class="hero__item"><span class="hero__item-n">03</span><span class="hero__item-t">AI&nbsp;Automation</span></li>
+        </ol>
+
+        <div class="hero__side">
+          <span class="meta">(Scroll)</span>
+          <span class="hero__cue" aria-hidden="true"><i></i></span>
+          <span class="meta">Watch it take root</span>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- seam between hero and the scroll film -->
+    <div class="marquee marquee--seam" aria-hidden="true">
+      <div class="marquee__track">
+        <span>Web Development <b>✳</b> App Development <b>✳</b> AI Automation <b>✳</b> Product Design <b>✳</b> </span>
+        <span>Web Development <b>✳</b> App Development <b>✳</b> AI Automation <b>✳</b> Product Design <b>✳</b> </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SCROLL FILM (pinned video sequence) ============ -->
+  <section class="story" id="story-section">
+    <div class="story__stage" id="pinned-container">
+
+      <video id="sequence-video" muted playsinline preload="auto"></video>
+      <div class="story__vignette" aria-hidden="true"></div>
+
+      <!-- 01 -->
+      <div class="beat beat--center" id="beat-1">
+        <span class="meta beat__idx">(01) &nbsp;Origin</span>
+        <p class="beat__line">Everything we build<br/>starts at the <em>root</em>.</p>
+      </div>
+
+      <!-- 02 -->
+      <div class="beat beat--nodes" id="beat-2">
+        <figure class="node node--l">
+          <span class="node__stem" aria-hidden="true"></span>
+          <span class="node__idx">01</span>
+          <h2 class="node__title">Web Development</h2>
+          <p class="node__desc">Sites and platforms that carry real weight.</p>
+        </figure>
+        <figure class="node node--c">
+          <span class="node__stem" aria-hidden="true"></span>
+          <span class="node__idx">02</span>
+          <h2 class="node__title">App Development</h2>
+          <p class="node__desc">Mobile products people actually keep.</p>
+        </figure>
+        <figure class="node node--r">
+          <span class="node__stem" aria-hidden="true"></span>
+          <span class="node__idx">03</span>
+          <h2 class="node__title">AI Automation</h2>
+          <p class="node__desc">Workflows that run themselves.</p>
+        </figure>
+      </div>
+
+      <!-- 03 -->
+      <div class="beat beat--center" id="beat-3">
+        <span class="meta beat__idx">(02) &nbsp;Method</span>
+        <p class="beat__line">Three disciplines.<br/>One <em>root system</em>.</p>
+      </div>
+
+      <!-- 04 (visual breath) -->
+      <div class="beat beat--center" id="beat-4"></div>
+
+      <!-- 05 -->
+      <div class="beat beat--final" id="beat-5">
+        <img src="logo.svg" alt="" class="final__mark" id="final-logo" />
+        <h2 class="final__word">Omentix</h2>
+        <p class="final__tag">Innovate · Automate · Elevate</p>
+        <a href="#work" class="btn btn--line magnetic" data-cursor="look"><span>See what we've grown</span></a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ WORK ============ -->
+  <section class="work" id="work">
+
+    <div class="shead" id="work-stage">
+      <div class="trail" aria-hidden="true"></div>
+
+      <div class="shead__inner">
+        <div class="shead__l">
+          <span class="meta">(02) &nbsp;Selected Work</span>
+          <h2 class="shead__title" data-anim="chars">Things we've<br/><em>actually</em> shipped</h2>
+        </div>
+        <p class="shead__note" data-anim="lines">One client platform, three in-house products. Real software, in production, with real users — not concepts.</p>
+      </div>
+
+      <span class="stage__hint" aria-hidden="true"><i></i>Move your cursor</span>
+    </div>
+
+    <!-- FEATURED -->
+    <a class="feat" href="https://trinetrarealty.com/" target="_blank" rel="noopener" data-cursor="visit ↗">
+      <div class="feat__top">
+        <div class="feat__id">
+          <span class="feat__num">01</span>
+          <div>
+            <h3 class="feat__title">Trinetra&nbsp;Realty</h3>
+            <span class="meta feat__meta">Client Platform &nbsp;/&nbsp; Real Estate &nbsp;/&nbsp; 2026</span>
+          </div>
+        </div>
+        <span class="feat__link">trinetrarealty.com <i>↗</i></span>
+      </div>
+
+      <div class="feat__body">
+        <p class="feat__desc">A full property platform for a Bhuj real-estate agency — listings, filtered search, enquiry routing and site-visit scheduling. Built to turn browsers into booked visits.</p>
+        <ul class="feat__stack">
+          <li>Listings CMS</li>
+          <li>Search &amp; Filters</li>
+          <li>Lead Pipeline</li>
+          <li>WhatsApp Enquiry</li>
+        </ul>
+      </div>
+
+      <div class="feat__shots">
+        <figure class="shot shot--wide">
+          <span class="shot__bar"><i></i><i></i><i></i><em>trinetrarealty.com</em></span>
+          <img src="assets/work/trinetra-1.png" alt="Trinetra Realty homepage with property search" loading="lazy" />
+        </figure>
+        <figure class="shot shot--wide">
+          <span class="shot__bar"><i></i><i></i><i></i><em>trinetrarealty.com/properties</em></span>
+          <img src="assets/work/trinetra-2.png" alt="Trinetra Realty featured property listings" loading="lazy" />
+        </figure>
+      </div>
+    </a>
+
+    <!-- PRODUCT ROWS -->
+    <div class="projects">
+
+      <article class="proj" data-cursor="scroll →">
+        <header class="proj__head">
+          <span class="proj__num">02</span>
+          <h3 class="proj__title">Transport Management</h3>
+          <span class="meta proj__label">In-house Product &nbsp;/&nbsp; TransitOps</span>
+        </header>
+        <div class="proj__inner">
+          <div class="proj__text">
+            <p class="proj__desc">Fleet dispatch and logistics control — live trip boards, driver and vehicle records, capacity guards that block over-loaded dispatches, and cost analytics down to the rupee.</p>
+            <ul class="proj__stack">
+              <li>Trip Dispatcher</li>
+              <li>Fleet &amp; Drivers</li>
+              <li>Fuel &amp; Expenses</li>
+              <li>Analytics</li>
+            </ul>
+          </div>
+          <div class="proj__shots">
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dashboard</em></span><img src="assets/work/transport-1.png" alt="TransitOps fleet dashboard" loading="lazy" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>analytics</em></span><img src="assets/work/transport-2.png" alt="TransitOps revenue and expense analytics" loading="lazy" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dispatcher</em></span><img src="assets/work/transport-3.png" alt="TransitOps trip dispatcher with live board" loading="lazy" /></figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="proj proj--flip" data-cursor="scroll →">
+        <header class="proj__head">
+          <span class="proj__num">03</span>
+          <h3 class="proj__title">Inventory Management</h3>
+          <span class="meta proj__label">In-house Product &nbsp;/&nbsp; CoreInventory</span>
+        </header>
+        <div class="proj__inner">
+          <div class="proj__text">
+            <p class="proj__desc">Multi-warehouse stock control — receipts, delivery orders, internal transfers and adjustments, with low-stock and out-of-stock alerts that surface before they cost anyone a sale.</p>
+            <ul class="proj__stack">
+              <li>Multi-warehouse</li>
+              <li>Receipts &amp; Delivery</li>
+              <li>Transfers</li>
+              <li>Stock Alerts</li>
+            </ul>
+          </div>
+          <div class="proj__shots">
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dashboard</em></span><img src="assets/work/inventory-1.png" alt="CoreInventory dashboard with stock alerts" loading="lazy" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>products</em></span><img src="assets/work/inventory-2.png" alt="CoreInventory product and SKU table" loading="lazy" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>warehouses</em></span><img src="assets/work/inventory-3.png" alt="CoreInventory warehouse and location management" loading="lazy" /></figure>
+          </div>
+        </div>
+      </article>
+
+      <article class="proj proj--soon">
+        <header class="proj__head">
+          <span class="proj__num">04</span>
+          <h3 class="proj__title">Restaurant POS</h3>
+          <span class="meta proj__label">In-house Product &nbsp;/&nbsp; In development</span>
+        </header>
+        <div class="proj__inner">
+          <div class="proj__text">
+            <p class="proj__desc">Point-of-sale built for the dinner rush — order capture, table state, billing and kitchen tickets in one screen, designed to be learnable in a single shift.</p>
+            <ul class="proj__stack">
+              <li>Order Capture</li>
+              <li>Table State</li>
+              <li>Billing</li>
+              <li>Kitchen Tickets</li>
+            </ul>
+          </div>
+          <div class="proj__shots">
+            <div class="soon">
+              <span class="soon__mark">POS</span>
+              <span class="meta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- ============ CONTACT ============ -->
+  <section class="contact" id="contact">
+
+    <!-- printed ground, carried over from the hero: halftone field · violet
+         ink blots, flipped for dark paper (screen blend, not multiply) -->
+    <div class="contact__ground" aria-hidden="true">
+      <span class="contact__dots"></span>
+      <span class="contact__blot contact__blot--a"></span>
+      <span class="contact__blot contact__blot--b"></span>
+    </div>
+    <span class="contact__rail" aria-hidden="true">23.2419°N&nbsp;&nbsp;69.6669°E</span>
+    <div class="contact__aura" aria-hidden="true"></div>
+
+    <div class="contact__inner">
+      <span class="meta">(03) &nbsp;Contact</span>
+      <h2 class="contact__title" data-anim="chars">Let's build<br/>something <em>worth</em><br/>keeping.</h2>
+      <p class="contact__lede" data-anim="lines">Tell us what you're building — a platform, an app, or a process that should have been automated last year. We'll tell you honestly what it takes.</p>
+
+      <div class="contact__main">
+        <a class="contact__email magnetic" href="mailto:omentix.tech@gmail.com" data-cursor="write" data-scramble-hover>
+          <span class="contact__email-text">omentix.tech@gmail.com</span>
+          <i aria-hidden="true">→</i>
+        </a>
+        <a class="contact__ig magnetic" href="https://www.instagram.com/omentix.tech/?hl=en" target="_blank" rel="noopener" data-cursor="follow">
+          <span>Instagram</span><i aria-hidden="true">↗</i>
+        </a>
+      </div>
+    </div>
+
+    <div class="marquee marquee--foot" aria-hidden="true">
+      <div class="marquee__track marquee__track--rev">
+        <span>Let's work together <b>✳</b> Let's work together <b>✳</b> Let's work together <b>✳</b> </span>
+        <span>Let's work together <b>✳</b> Let's work together <b>✳</b> Let's work together <b>✳</b> </span>
+      </div>
+    </div>
+
+    <footer class="foot">
+      <div class="foot__col">
+        <img src="omentix_logo_transparent.png" alt="Omentix Tech" class="foot__logo" />
+      </div>
+      <div class="foot__col foot__col--mid">
+        <span class="meta">Bhuj, Kutch — Gujarat, India</span>
+        <span class="meta">Web · Apps · AI Automation</span>
+      </div>
+      <div class="foot__col foot__col--end">
+        <span class="meta">© 2026 Omentix Tech</span>
+        <a class="foot__top magnetic" href="#hero" data-cursor="top" aria-label="Back to top">
+          <i aria-hidden="true">↑</i>
+        </a>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ============ SCRIPTS ============ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/CustomEase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/split-type@0.3.4/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

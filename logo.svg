@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Central Node -->
+  <circle cx="100" cy="100" r="18" fill="#6D28D9" />
+  
+  <!-- Outer Nodes -->
+  <circle cx="100" cy="40" r="15" fill="#6D28D9" /> <!-- Top -->
+  <circle cx="160" cy="60" r="14" fill="#6D28D9" /> <!-- Top Right -->
+  <circle cx="170" cy="110" r="13" fill="#6D28D9" /> <!-- Right -->
+  <circle cx="150" cy="160" r="15" fill="#6D28D9" /> <!-- Bottom Right -->
+  <circle cx="100" cy="170" r="16" fill="#6D28D9" /> <!-- Bottom -->
+  <circle cx="50" cy="130" r="14" fill="#6D28D9" /> <!-- Bottom Left -->
+  <circle cx="60" cy="70" r="14" fill="#6D28D9" /> <!-- Top Left -->
+
+  <!-- Connecting Lines -->
+  <line x1="100" y1="100" x2="100" y2="55" stroke="#6D28D9" stroke-width="8" />
+  <line x1="100" y1="100" x2="150" y2="68" stroke="#6D28D9" stroke-width="8" />
+  <line x1="100" y1="100" x2="157" y2="107" stroke="#6D28D9" stroke-width="8" />
+  <line x1="100" y1="100" x2="140" y2="150" stroke="#6D28D9" stroke-width="8" />
+  <line x1="100" y1="100" x2="100" y2="154" stroke="#6D28D9" stroke-width="8" />
+  <line x1="100" y1="100" x2="60" y2="122" stroke="#6D28D9" stroke-width="8" />
+  <line x1="100" y1="100" x2="69" y2="78" stroke="#6D28D9" stroke-width="8" />
+  
+  <!-- Outer Connections -->
+  <line x1="100" y1="40" x2="150" y2="55" stroke="#6D28D9" stroke-width="8" />
+</svg>
