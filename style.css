@@ -17,6 +17,9 @@
   --ink-2:      #191934;
   --ink-3:      #24244a;
 
+  /* hero only — the lifted, faintly violet black of an unlit tube, not a void */
+  --crt-black:  #121118;
+
   --violet:     #6D28D9;
   --violet-2:   #8B5CF6;
   --violet-3:   #C9B6F7;
@@ -345,6 +348,14 @@ em{
   box-shadow:0 4px 30px rgba(16,16,36,.08), 0 1px 3px rgba(16,16,36,.05);
 }
 
+/* unstuck, the nav floats over the dark hero — light until the pill
+   picks up its paper ground */
+.nav:not(.is-stuck){ color:var(--paper); }
+.nav:not(.is-stuck) .nav__cta{ border-color:var(--rule-inv); }
+.nav:not(.is-stuck) .nav__cta:hover{ background:var(--paper); color:var(--ink); border-color:var(--paper); }
+.nav:not(.is-stuck) .navlink span::after{ color:var(--violet-3); }
+.nav:not(.is-stuck) .navlink::after{ background:var(--violet-3); }
+
 .nav__brand{ display:inline-flex; align-items:center; gap:.6rem; }
 .nav__mark{ width:28px; height:28px; transition:transform var(--dur-base) var(--ease-hover); }
 .nav:hover .nav__mark{ transform:rotate(-12deg); }
@@ -400,13 +411,16 @@ em{
 }
 .nav__cta:hover .nav__cta-dot{ background:var(--violet-3); transform:scale(1.6); }
 /* ==========================================================================
-   HERO — press sheet
-   A ruled editorial grid on printed ground: twelve faint column rules, a
-   halftone field, and two violet ink blots. No blurred glass — the hero
-   should read like it came off the same press as the ink illustration.
+   HERO — lit screen
+   A ruled editorial grid over a CRT warp (React Bits' phosphor plasma, violet
+   on CRT black), inked in negative the way the contact section is. Where
+   WebGL can't run, a halftone field and two violet blots stand in. No
+   blurred glass.
    ========================================================================== */
 .hero{
-  --dot: rgba(109,40,217,.30);
+  --dot: rgba(201,182,247,.22);
+  background:var(--crt-black);
+  color:var(--paper);
   position:relative; z-index:2;
   min-height:100svh;
   display:flex; flex-direction:column; justify-content:flex-end;
@@ -417,11 +431,26 @@ em{
 /* ---- printed ground ------------------------------------------------------ */
 .hero__ground{ position:absolute; inset:0; z-index:0; pointer-events:none; }
 
+/* CRT warp — mounted from index.html. The shader paints --crt-black, the same
+   ground .hero sits on, so the layer fades up on its first real frame
+   (crt-warp.js adds .is-live) with no seam and no blank-buffer flash. */
+.hero__crt{
+  position:absolute; inset:0;
+  overflow:hidden;
+  opacity:0;
+  transition:opacity 1.6s var(--ease-enter);
+}
+.hero__crt.is-live{ opacity:1; }
+
+/* the warp replaces the static print; they stay as the no-WebGL fallback */
+.hero.has-crt .hero__dots,
+.hero.has-crt .hero__blot{ display:none; }
+
 /* twelve hairline column rules — the press grid, left visible on purpose */
 .hero__cols{
   position:absolute; inset:0 var(--gut);
   background-image:repeating-linear-gradient(to right,
-    var(--rule-2) 0 1px, transparent 1px calc(100% / 12));
+    var(--rule-inv-2) 0 1px, transparent 1px calc(100% / 12));
   -webkit-mask-image:linear-gradient(to bottom, transparent, #000 14%, #000 74%, transparent);
           mask-image:linear-gradient(to bottom, transparent, #000 14%, #000 74%, transparent);
 }
@@ -441,20 +470,21 @@ em{
   to  { transform:translate3d(-13px,-9px,0); }
 }
 
-/* violet ink blots — turbulence-displaced, printed with multiply */
+/* violet blots — turbulence-displaced, screen-blended so they glow on the
+   dark ground */
 .hero__blot{
   position:absolute; aspect-ratio:1;
   background-repeat:no-repeat; background-size:100% 100%;
-  mix-blend-mode:multiply;
+  mix-blend-mode:screen;
   will-change:transform;
 }
 .hero__blot--a{
-  width:min(34vw,460px); right:-6vw; top:-9vh; opacity:.2;
+  width:min(34vw,460px); right:-6vw; top:-9vh; opacity:.45;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.055' numOctaves='5' seed='7'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='58'/%3E%3C/filter%3E%3Cg filter='url(%23f)' fill='%236D28D9'%3E%3Ccircle cx='100' cy='98' r='46'/%3E%3Ccircle cx='156' cy='60' r='9'/%3E%3Ccircle cx='48' cy='150' r='7'/%3E%3Ccircle cx='164' cy='140' r='5'/%3E%3Ccircle cx='36' cy='62' r='4'/%3E%3C/g%3E%3C/svg%3E");
   animation:blotDrift 30s ease-in-out infinite alternate;
 }
 .hero__blot--b{
-  width:min(24vw,300px); left:-6vw; bottom:-5vh; opacity:.15;
+  width:min(24vw,300px); left:-6vw; bottom:-5vh; opacity:.35;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.07' numOctaves='5' seed='19'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='50'/%3E%3C/filter%3E%3Cg filter='url(%23g)' fill='%236D28D9'%3E%3Ccircle cx='96' cy='104' r='44'/%3E%3Ccircle cx='44' cy='54' r='8'/%3E%3Ccircle cx='152' cy='132' r='6'/%3E%3C/g%3E%3C/svg%3E");
   animation:blotDrift 38s ease-in-out infinite alternate-reverse;
 }
@@ -470,7 +500,7 @@ em{
   writing-mode:vertical-rl;
   font-family:var(--mono); font-size:.7rem;
   letter-spacing:.26em; text-transform:uppercase;
-  color:var(--ink); opacity:.32;
+  color:var(--paper); opacity:.28;
   z-index:1; pointer-events:none; white-space:nowrap;
 }
 
@@ -486,10 +516,11 @@ em{
 .hero__row{ display:flex; justify-content:space-between; align-items:flex-end; gap:2rem; }
 .hero__row--top{
   padding-bottom:.9rem;
-  border-bottom:1px solid var(--rule);
+  border-bottom:1px solid var(--rule-inv);
   align-items:center;
 }
 .hero__edition{ opacity:.5; }
+.hero .pulse{ background:var(--violet-3); }
 
 /* ---- headline ------------------------------------------------------------ */
 .hero__title{
@@ -513,7 +544,7 @@ em{
   font-style:italic; font-weight:500;
   font-size:1.07em;
   letter-spacing:-.005em;
-  color:var(--violet);
+  color:var(--violet-3);
   padding-right:.05em;
 }
 
@@ -535,7 +566,7 @@ em{
   align-items:flex-end;
   gap:clamp(1.5rem,4vw,3.5rem);
   padding-top:clamp(.9rem,2.4vh,1.5rem);
-  border-top:1px solid var(--rule);
+  border-top:1px solid var(--rule-inv);
 }
 
 .hero__col{
@@ -554,12 +585,12 @@ em{
   display:inline-flex; align-items:center; gap:.75rem;
   font-family:var(--mono); font-size:.7rem;
   letter-spacing:.16em; text-transform:uppercase;
-  color:var(--ink);
+  color:var(--paper);
 }
 .hero__cta-label{ position:relative; padding-bottom:.28rem; }
 .hero__cta-label::after{
   content:""; position:absolute; left:0; bottom:0;
-  width:100%; height:1.5px; background:var(--violet);
+  width:100%; height:1.5px; background:var(--violet-3);
   transform:scaleX(0); transform-origin:right;
   transition:transform var(--dur-base) var(--ease-hover);
 }
@@ -567,7 +598,7 @@ em{
 .hero__cta-arrow{
   display:grid; place-items:center;
   width:30px; height:30px; border-radius:50%;
-  border:1.5px solid var(--rule);
+  border:1.5px solid var(--rule-inv);
   font-size:.8rem; line-height:1;
   transition:background-color var(--dur-base) var(--ease-hover),
              color var(--dur-base) var(--ease-hover),
@@ -575,7 +606,7 @@ em{
              transform var(--dur-base) var(--ease-hover);
 }
 .hero__cta:hover .hero__cta-arrow{
-  background:var(--ink); color:var(--paper); border-color:var(--ink);
+  background:var(--paper); color:var(--ink); border-color:var(--paper);
   transform:translateX(3px);
 }
 
@@ -585,7 +616,7 @@ em{
   display:flex; flex-direction:column; gap:.5rem;
   flex:0 0 auto;
   padding-left:clamp(1rem,2.4vw,2rem);
-  border-left:1px solid var(--rule);
+  border-left:1px solid var(--rule-inv);
 }
 .hero__item{
   display:flex; align-items:baseline; gap:.85rem;
@@ -597,7 +628,7 @@ em{
 .hero__item-n{
   font-family:var(--mono); font-weight:400;
   font-size:.7rem; letter-spacing:.12em;
-  color:var(--violet); opacity:.75;
+  color:var(--violet-3); opacity:.75;
 }
 .hero__item-t{ opacity:.78; }
 
@@ -607,12 +638,12 @@ em{
 }
 .hero__cue{
   width:1.5px; height:clamp(38px,7vh,64px);
-  background:linear-gradient(to bottom,var(--rule),var(--violet));
+  background:linear-gradient(to bottom,var(--rule-inv),var(--violet-3));
   position:relative; overflow:hidden;
 }
 .hero__cue i{
   position:absolute; inset:0;
-  background:linear-gradient(to bottom, var(--violet), var(--violet-2));
+  background:linear-gradient(to bottom, var(--violet-3), var(--violet-2));
   animation:cue 2.6s var(--ease-enter) infinite;
 }
 @keyframes cue{
@@ -644,6 +675,9 @@ em{
   letter-spacing:-.01em;
 }
 .marquee__track b{ color:var(--violet); font-weight:400; padding:0 .5rem; }
+
+/* lives inside the dark hero but prints on paper — don't inherit its light ink */
+.marquee--seam{ color:var(--ink); }
 @keyframes marq{ to{ transform:translateX(-50%); } }
 
 .marquee--foot{
@@ -1264,13 +1298,13 @@ em{
   .hero__index{
     flex-direction:row; flex-wrap:wrap; gap:.5rem 1.4rem;
     padding-left:0; border-left:none;
-    padding-top:1rem; border-top:1px solid var(--rule);
+    padding-top:1rem; border-top:1px solid var(--rule-inv);
     width:100%;
   }
   .hero__item{ gap:.5rem; }
   .hero__side{ align-items:flex-start; text-align:left; flex-direction:row; align-items:center; gap:1rem; }
   .hero__cue{ width:clamp(38px,12vw,64px); height:1.5px;
-              background:linear-gradient(to right,var(--rule),var(--violet)); }
+              background:linear-gradient(to right,var(--rule-inv),var(--violet-3)); }
   @keyframes cue{ 0%{transform:translateX(-100%)} 55%{transform:translateX(100%)} 100%{transform:translateX(100%)} }
 
   .feat__top{ flex-direction:column; gap:1rem; }

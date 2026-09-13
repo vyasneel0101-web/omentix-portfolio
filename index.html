@@ -73,8 +73,10 @@
   <!-- ============ HERO ============ -->
   <section class="hero" id="hero">
 
-    <!-- printed ground: column rules · halftone field · violet ink blots -->
+    <!-- printed ground: CRT warp (WebGL) · column rules · halftone field and
+         violet ink blots, which stand in whenever the warp can't run -->
     <div class="hero__ground" aria-hidden="true">
+      <div class="hero__crt"></div>
       <span class="hero__cols"></span>
       <span class="hero__dots"></span>
       <span class="hero__blot hero__blot--a"></span>
@@ -381,5 +383,49 @@
   <script src="https://cdn.jsdelivr.net/npm/split-type@0.3.4/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
   <script src="main.js"></script>
+
+  <!-- hero background: React Bits CRT Warp, inked from the style.css tokens -->
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }
+  </script>
+  <script type="module">
+    import createCRTWarp from './crt-warp.js';
+
+    const hero  = document.querySelector('.hero');
+    const mount = document.querySelector('.hero__crt');
+    const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const touch   = matchMedia('(hover: none), (pointer: coarse)').matches;
+
+    if (hero && mount){
+      try {
+        createCRTWarp(mount, {
+          color: token('--violet'),         // the deep violet, not the lighter --violet-2
+          backgroundColor: token('--crt-black'),
+          speed: .35,               // unhurried
+          curvature: .25,
+          scanlineStrength: .35,
+          scanlineFrequency: 200,
+          waveAmplitude: .3,
+          waveFrequency: 2.5,
+          bloom: .9,                // a soft phosphor glow, short of blowing out
+          bloomRadius: 1,
+          noise: .07,               // grain lifts the black like an unlit tube
+          vignette: .3,             // bands dim toward the edge of the glass
+          brightness: .85,          // waves sit a shade under full violet so the type leads
+          pixelation: 1,
+          rgbShift: .012,           // a hair of phosphor fringing
+          mouseReact: !touch && !reduced,
+          mouseStrength: .5,
+          dpr: 1,
+          fps: reduced ? 2 : 30,
+          paused: reduced,
+        }, { eventTarget: hero });
+        hero.classList.add('has-crt');
+      } catch (err){
+        console.warn('[omentix] CRT warp unavailable —', err);
+      }
+    }
+  </script>
 </body>
 </html>
