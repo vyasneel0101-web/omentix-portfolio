@@ -5,14 +5,22 @@
 
    The shaders are upstream's, verbatim. Only the React wrapper is replaced:
    props become an options object, the prop effect becomes set(), unmount
-   becomes destroy(). Two additions the site needs:
+   becomes destroy(). Three additions the site needs:
+     · a plain <script> reading the global THREE, the way the page already
+       loads GSAP and Lenis. Module scripts are blocked when index.html is
+       opened straight off the disk (file://), which is how the site gets
+       looked at day to day — this has to survive a double-click
      · colours accept any CSS colour — including the oklch() tokens in
        style.css — so the background is inked from the design system
      · `eventTarget` lets the pointer warp listen on a parent, because here
        the canvas sits underneath the hero's content and never gets the events
    ========================================================================== */
 
-import * as THREE from 'three';
+(function (global){
+'use strict';
+
+const THREE = global.THREE;
+if (!THREE) throw new Error('crt-warp.js: three.js has to load first');
 
 const vertexShader = `
 varying vec2 vUv;
@@ -46,6 +54,7 @@ uniform float uRgbShift;
 uniform vec2 uPointer;
 uniform float uMouseStrength;
 uniform float uMouseReact;
+uniform float uCollapse;
 
 float hash21(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -90,7 +99,14 @@ float referencePlasma(vec2 uv, float t) {
 }
 
 void main() {
-  vec2 uv = vUv;
+  // power-off: the picture squeezes to a line, then the line to a dot
+  float sqV = smoothstep(0.0, 0.6, uCollapse);
+  float sqH = smoothstep(0.5, 0.85, uCollapse);
+  float sy = mix(1.0, 0.006, sqV * sqV);
+  float sx = mix(1.0, 0.004, sqH * sqH * (3.0 - 2.0 * sqH));
+  vec2 dc = vUv - 0.5;
+  vec2 uv = vec2(dc.x / sx, dc.y / sy) + 0.5;
+  float inside = step(abs(uv.x - 0.5), 0.5) * step(abs(uv.y - 0.5), 0.5);
   if (uPixelation > 1.001) {
     vec2 cells = max(uResolution / uPixelation, vec2(1.0));
     uv = (floor(uv * cells) + 0.5) / cells;
@@ -123,7 +139,7 @@ void main() {
   vec3 waveColor = uColor * (0.3 + signal * 0.7 + glow * uBloom * 0.65);
   waveColor += (channelSignal - signal) * 0.42;
 
-  float edge = clamp(1.0 - dot(vUv - 0.5, vUv - 0.5) * 2.0, 0.0, 1.0);
+  float edge = clamp(1.0 - dot(uv - 0.5, uv - 0.5) * 2.0, 0.0, 1.0);
   float edgeFade = mix(1.0, smoothstep(0.0, 1.0, edge), uVignette);
   float waveMask = clamp(signal * 0.82 + glow * 0.52, 0.0, 1.0) * edgeFade;
 
@@ -131,11 +147,25 @@ void main() {
   waveColor = max(waveColor * uBrightness, vec3(0.0));
   vec3 color = mix(uBackgroundColor, waveColor, waveMask);
   color += (grain - 0.5) * uNoise;
+  if (uCollapse > 0.0) {
+    float aspect = uResolution.x / max(uResolution.y, 1.0);
+    vec3 hot = vec3(0.78, 0.66, 1.0);
+    // the picture brightens as it's crushed — the energy has nowhere to go
+    vec3 picture = color * (1.0 + smoothstep(0.1, 0.004, sy) * 1.2 + sqH * 2.0);
+    picture = mix(picture, hot * 1.6, smoothstep(0.012, 0.002, sy) * 0.75);   // only once it is nearly a line
+    // the rest of the glass goes dark
+    vec3 off = uBackgroundColor * (1.0 - sqV);
+    vec2 outside = max(abs(dc) - 0.5 * vec2(sx, sy), 0.0) * vec2(aspect, 1.0);
+    float halo = exp(-length(outside) * mix(60.0, 18.0, sqH)) * sqV;
+    float dotGlow = exp(-length(dc * vec2(aspect, 1.0)) * 70.0) * smoothstep(0.7, 0.9, uCollapse);
+    // the halo belongs around the band, not on top of the picture inside it
+    color = mix(off, picture, inside) + hot * halo * (1.0 - inside) * (0.8 + sqH * 1.5) + hot * dotGlow * 1.5;
+  }
   gl_FragColor = vec4(max(color, vec3(0.0)), 1.0);
 }
 `;
 
-export const DEFAULT_PROPS = {
+const DEFAULT_PROPS = {
   color: '#c755f7',
   backgroundColor: '#05010a',
   speed: 0.5,
@@ -181,7 +211,7 @@ function setColor(target, css){
   target.setRGB(r, g, b, THREE.LinearSRGBColorSpace);
 }
 
-export default function createCRTWarp(container, initial = {}, { eventTarget = container } = {}){
+function createCRTWarp(container, initial = {}, { eventTarget = container } = {}){
   const props = { ...DEFAULT_PROPS, ...initial };
 
   const scene = new THREE.Scene();
@@ -211,6 +241,7 @@ export default function createCRTWarp(container, initial = {}, { eventTarget = c
       uPointer: { value: new THREE.Vector2(0, 0) },
       uMouseStrength: { value: 0.5 },
       uMouseReact: { value: 1 },
+      uCollapse: { value: 0 },
     },
   });
   const { uniforms } = material;
@@ -226,11 +257,20 @@ export default function createCRTWarp(container, initial = {}, { eventTarget = c
   renderer.domElement.style.display = 'block';
   container.appendChild(renderer.domElement);
 
+  /* Resizing a canvas clears its drawing buffer, and the loop below only
+     paints every 1/fps s, so a resize (the scrollbar appearing, a browser
+     zoom step) used to put a blank frame on screen. Redraw in the same
+     frame instead — ResizeObserver fires after layout and before paint. */
   const resize = () => {
     const width = Math.max(container.clientWidth, 1);
     const height = Math.max(container.clientHeight, 1);
+    const size = renderer.getSize(new THREE.Vector2());
+    const ratio = Math.min(window.devicePixelRatio || 1, props.dpr);
+    if (size.x === width && size.y === height && renderer.getPixelRatio() === ratio) return;
+    renderer.setPixelRatio(ratio);
     renderer.setSize(width, height, false);
     uniforms.uResolution.value.set(renderer.domElement.width, renderer.domElement.height);
+    renderer.render(scene, camera);
   };
 
   const resizeObserver = new ResizeObserver(resize);
@@ -249,7 +289,8 @@ export default function createCRTWarp(container, initial = {}, { eventTarget = c
   const render = (now) => {
     frame = requestAnimationFrame(render);
     if (!visible || document.hidden) return;
-    const interval = 1000 / Math.max(1, props.fps);
+    // full frame rate while the tube is switching off — at 30fps the squeeze steps
+    const interval = 1000 / Math.max(1, uniforms.uCollapse.value > 0 ? 60 : props.fps);
     if (now - lastFrame < interval) return;
     lastFrame = now - ((now - lastFrame) % interval);
     const delta = Math.min(clock.getDelta(), 0.1);
@@ -280,11 +321,15 @@ export default function createCRTWarp(container, initial = {}, { eventTarget = c
     uniforms.uRgbShift.value = props.rgbShift;
     uniforms.uMouseReact.value = props.mouseReact ? 1 : 0;
     uniforms.uMouseStrength.value = props.mouseStrength;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, props.dpr));
     resize();
   };
 
   set();
+  /* Draw one frame now, visible or not. It compiles the shader here, behind
+     the preloader, instead of as a stall the first time the section scrolls
+     into view — the contact tube starts off-screen and used to hitch. */
+  renderer.render(scene, camera);
+  container.classList.add('is-live');
   render(0);
 
   const onPointerMove = (event) => {
@@ -311,5 +356,13 @@ export default function createCRTWarp(container, initial = {}, { eventTarget = c
     container.classList.remove('is-live');
   };
 
-  return { set, destroy, canvas: renderer.domElement };
+  /* 0 → 1: the power-off. main.js scrubs it as the hero is scrolled away. */
+  const setCollapse = (v) => { uniforms.uCollapse.value = Math.min(1, Math.max(0, v)); };
+
+  return { set, setCollapse, destroy, canvas: renderer.domElement };
 }
+
+global.createCRTWarp = createCRTWarp;
+global.CRT_WARP_DEFAULTS = DEFAULT_PROPS;
+
+})(window);

@@ -7,13 +7,12 @@
   <meta name="description" content="Omentix Tech is a software studio in Bhuj, Kutch. We build web platforms, mobile apps and AI automation for teams who'd rather ship than talk about shipping." />
 
   <!-- Type system: Clash Display (display) · Satoshi (text) · Sentient (italic accent) · JetBrains Mono (meta)
-       Scroll-film only: Zodiak (beat lines + italic accent) · Bricolage Grotesque (node labels) -->
+       Scroll-film only: Bricolage Grotesque (service tags) -->
   <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
   <link href="https://api.fontshare.com/v2/css?f[]=sentient@400,400i,500i&display=swap" rel="stylesheet">
-  <link href="https://api.fontshare.com/v2/css?f[]=zodiak@700,700i&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
@@ -127,66 +126,66 @@
       </div>
 
     </div>
-
-    <!-- seam between hero and the scroll film -->
-    <div class="marquee marquee--seam" aria-hidden="true">
-      <div class="marquee__track">
-        <span>Web Development <b>✳</b> App Development <b>✳</b> AI Automation <b>✳</b> Product Design <b>✳</b> </span>
-        <span>Web Development <b>✳</b> App Development <b>✳</b> AI Automation <b>✳</b> Product Design <b>✳</b> </span>
-      </div>
-    </div>
   </section>
 
-  <!-- ============ SCROLL FILM (pinned video sequence) ============ -->
+  <!-- ============ SCROLL FILM (live 3D, root-film.js) ============
+       The canvas is added by root-film.js; everything below is the copy
+       that rides on it. data-in / data-out are the slice of the scroll each
+       line is up for. Without WebGL only the closing mark shows. -->
   <section class="story" id="story-section">
     <div class="story__stage" id="pinned-container">
+      <span class="story__cols" aria-hidden="true"></span>
 
-      <video id="sequence-video" muted playsinline preload="auto"></video>
-      <div class="story__vignette" aria-hidden="true"></div>
-
-      <!-- 01 -->
-      <div class="beat beat--center" id="beat-1">
-        <span class="meta beat__idx">(01) &nbsp;Origin</span>
-        <p class="beat__line">Everything we build<br/>starts at the <em>root</em>.</p>
+      <div class="film-beat" data-in=".04" data-out=".1">
+        <span class="meta film-beat__idx">(01) &nbsp;Seed</span>
+        <p class="film-beat__line">Everything we build starts at the <em>root</em>.</p>
+      </div>
+      <div class="film-beat" data-in=".1" data-out=".21">
+        <span class="meta film-beat__idx">(01) &nbsp;Canopy</span>
+        <p class="film-beat__line">What people see is only the <em>canopy</em>.</p>
+      </div>
+      <div class="film-beat" data-in=".23" data-out=".36">
+        <span class="meta film-beat__idx">(02) &nbsp;Beneath</span>
+        <p class="film-beat__line">The real work grows <em>underground</em>.</p>
+      </div>
+      <div class="film-beat" data-in=".4" data-out=".55">
+        <span class="meta film-beat__idx">(02) &nbsp;Method</span>
+        <p class="film-beat__line">Three disciplines. One <em>root system</em>.</p>
+      </div>
+      <div class="film-beat" data-in=".56" data-out=".67">
+        <span class="meta film-beat__idx">(03) &nbsp;Flow</span>
+        <p class="film-beat__line">Every project feeds the <em>same</em> roots.</p>
+      </div>
+      <div class="film-beat" data-in=".68" data-out=".83">
+        <span class="meta film-beat__idx">(04) &nbsp;Focus</span>
+        <p class="film-beat__line">Then it all pulls toward one <em>centre</em>.</p>
       </div>
 
-      <!-- 02 -->
-      <div class="beat beat--nodes" id="beat-2">
-        <figure class="node node--l">
-          <span class="node__stem" aria-hidden="true"></span>
-          <span class="node__idx">01</span>
-          <h2 class="node__title">Web Development</h2>
-          <p class="node__desc">Sites and platforms that carry real weight.</p>
-        </figure>
-        <figure class="node node--c">
-          <span class="node__stem" aria-hidden="true"></span>
-          <span class="node__idx">02</span>
-          <h2 class="node__title">App Development</h2>
-          <p class="node__desc">Mobile products people actually keep.</p>
-        </figure>
-        <figure class="node node--r">
-          <span class="node__stem" aria-hidden="true"></span>
-          <span class="node__idx">03</span>
-          <h2 class="node__title">AI Automation</h2>
-          <p class="node__desc">Workflows that run themselves.</p>
-        </figure>
-      </div>
+      <!-- tags ride on the three service nodes — Web, App, AI, in that order -->
+      <figure class="film-tag">
+        <span class="film-tag__stem" aria-hidden="true"></span>
+        <span class="film-tag__idx">01</span>
+        <h2 class="film-tag__title">Web Development</h2>
+        <p class="film-tag__desc">Sites and platforms that carry real weight.</p>
+      </figure>
+      <figure class="film-tag">
+        <span class="film-tag__stem" aria-hidden="true"></span>
+        <span class="film-tag__idx">02</span>
+        <h2 class="film-tag__title">App Development</h2>
+        <p class="film-tag__desc">Mobile products people actually keep.</p>
+      </figure>
+      <figure class="film-tag">
+        <span class="film-tag__stem" aria-hidden="true"></span>
+        <span class="film-tag__idx">03</span>
+        <h2 class="film-tag__title">AI Automation</h2>
+        <p class="film-tag__desc">Workflows that run themselves.</p>
+      </figure>
 
-      <!-- 03 -->
-      <div class="beat beat--center" id="beat-3">
-        <span class="meta beat__idx">(02) &nbsp;Method</span>
-        <p class="beat__line">Three disciplines.<br/>One <em>root system</em>.</p>
-      </div>
-
-      <!-- 04 (visual breath) -->
-      <div class="beat beat--center" id="beat-4"></div>
-
-      <!-- 05 -->
-      <div class="beat beat--final" id="beat-5">
-        <img src="logo.svg" alt="" class="final__mark" id="final-logo" />
-        <h2 class="final__word">Omentix</h2>
-        <p class="final__tag">Innovate · Automate · Elevate</p>
-        <a href="#work" class="btn btn--line magnetic" data-cursor="look"><span>See what we've grown</span></a>
+      <div class="film-word">
+        <img src="logo.svg" alt="" class="film-word__mark" />
+        <h2 class="film-word__name">Omentix</h2>
+        <p class="meta film-word__tag">Innovate · Automate · Elevate</p>
+        <a href="#work" class="btn btn--line film-word__cta magnetic" data-cursor="look"><span>See what we've grown</span></a>
       </div>
 
     </div>
@@ -235,11 +234,11 @@
       <div class="feat__shots">
         <figure class="shot shot--wide">
           <span class="shot__bar"><i></i><i></i><i></i><em>trinetrarealty.com</em></span>
-          <img src="assets/work/trinetra-1.png" alt="Trinetra Realty homepage with property search" loading="lazy" />
+          <img src="assets/work/trinetra-1.png" alt="Trinetra Realty homepage with property search" />
         </figure>
         <figure class="shot shot--wide">
           <span class="shot__bar"><i></i><i></i><i></i><em>trinetrarealty.com/properties</em></span>
-          <img src="assets/work/trinetra-2.png" alt="Trinetra Realty featured property listings" loading="lazy" />
+          <img src="assets/work/trinetra-2.png" alt="Trinetra Realty featured property listings" />
         </figure>
       </div>
     </a>
@@ -264,9 +263,9 @@
             </ul>
           </div>
           <div class="proj__shots">
-            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dashboard</em></span><img src="assets/work/transport-1.png" alt="TransitOps fleet dashboard" loading="lazy" /></figure>
-            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>analytics</em></span><img src="assets/work/transport-2.png" alt="TransitOps revenue and expense analytics" loading="lazy" /></figure>
-            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dispatcher</em></span><img src="assets/work/transport-3.png" alt="TransitOps trip dispatcher with live board" loading="lazy" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dashboard</em></span><img src="assets/work/transport-1.png" alt="TransitOps fleet dashboard" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>analytics</em></span><img src="assets/work/transport-2.png" alt="TransitOps revenue and expense analytics" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dispatcher</em></span><img src="assets/work/transport-3.png" alt="TransitOps trip dispatcher with live board" /></figure>
           </div>
         </div>
       </article>
@@ -288,9 +287,9 @@
             </ul>
           </div>
           <div class="proj__shots">
-            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dashboard</em></span><img src="assets/work/inventory-1.png" alt="CoreInventory dashboard with stock alerts" loading="lazy" /></figure>
-            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>products</em></span><img src="assets/work/inventory-2.png" alt="CoreInventory product and SKU table" loading="lazy" /></figure>
-            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>warehouses</em></span><img src="assets/work/inventory-3.png" alt="CoreInventory warehouse and location management" loading="lazy" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>dashboard</em></span><img src="assets/work/inventory-1.png" alt="CoreInventory dashboard with stock alerts" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>products</em></span><img src="assets/work/inventory-2.png" alt="CoreInventory product and SKU table" /></figure>
+            <figure class="shot"><span class="shot__bar"><i></i><i></i><i></i><em>warehouses</em></span><img src="assets/work/inventory-3.png" alt="CoreInventory warehouse and location management" /></figure>
           </div>
         </div>
       </article>
@@ -335,11 +334,105 @@
     </div>
     <span class="contact__rail" aria-hidden="true">23.2419°N&nbsp;&nbsp;69.6669°E</span>
     <div class="contact__aura" aria-hidden="true"></div>
+    <div class="contact__crt" aria-hidden="true"></div>
 
     <div class="contact__inner">
+
       <span class="meta">(03) &nbsp;Contact</span>
-      <h2 class="contact__title" data-anim="chars">Let's build<br/>something <em>worth</em><br/>keeping.</h2>
-      <p class="contact__lede" data-anim="lines">Tell us what you're building — a platform, an app, or a process that should have been automated last year. We'll tell you honestly what it takes.</p>
+
+      <!-- the headline is a pixel swap: click it and the grid spirals the
+           other line in. Both layers are tinted panels — ink and violet, both
+           well under full opacity — so the CRT behind keeps showing through
+           the pixels instead of being boxed out by them. -->
+      <div class="contact__swap pixel-swap" data-pixel-swap data-cursor="swap">
+        <div class="pixel-swap__layer contact__panel contact__panel--ink">
+          <h2 class="contact__title" data-anim="chars">we are<br/><em>OMENs</em><br/>we can see you grow with our digital experiences</h2>
+        </div>
+        <div class="pixel-swap__layer contact__panel contact__panel--violet">
+          <p class="contact__title contact__title--alt">Let's build something <em>worth</em> keeping.</p>
+        </div>
+        <span class="contact__swap-hint" aria-hidden="true">click to swap</span>
+      </div>
+
+      <p class="contact__lede" data-anim="lines">Tell us what do you plan to build — a platform, an app, or a process that should have been automated last year — we'll tell you honestly what it takes!</p>
+
+      <!-- the docket — the enquiry as a printed work order rather than a web
+           form: mono field numbers, dotted rules, stamp chips. It composes a
+           mailto and hands it to the visitor's mail client (see initDocket),
+           so the page stays a static file with no backend behind it. -->
+      <div class="docket__wrap">
+        <form class="docket" id="docket" novalidate>
+          <header class="docket__head">
+            <span class="meta">Work Order</span>
+            <span class="docket__no" data-docket-no>OMX·——·———</span>
+          </header>
+
+          <div class="docket__body">
+            <div class="docket__col">
+              <fieldset class="docket__set">
+                <legend class="docket__legend">01 &nbsp;Scope <em class="docket__hint">any number</em></legend>
+                <div class="docket__chips" data-chips="scope" data-multi>
+                  <button type="button" class="chip" data-value="Web platform">Web platform</button>
+                  <button type="button" class="chip" data-value="Mobile app">Mobile app</button>
+                  <button type="button" class="chip" data-value="AI automation">AI automation</button>
+                  <button type="button" class="chip" data-value="Not sure yet">Not sure yet</button>
+                </div>
+              </fieldset>
+
+              <fieldset class="docket__set">
+                <legend class="docket__legend">02 &nbsp;Budget</legend>
+                <div class="docket__chips" data-chips="budget">
+                  <button type="button" class="chip" data-value="Under ₹1L">Under ₹1L</button>
+                  <button type="button" class="chip" data-value="₹1L – ₹5L">₹1L – ₹5L</button>
+                  <button type="button" class="chip" data-value="₹5L and up">₹5L and up</button>
+                  <button type="button" class="chip" data-value="You tell us">You tell us</button>
+                </div>
+              </fieldset>
+
+              <fieldset class="docket__set">
+                <legend class="docket__legend">03 &nbsp;Timeline</legend>
+                <div class="docket__chips" data-chips="timeline">
+                  <button type="button" class="chip" data-value="Yesterday">Yesterday</button>
+                  <button type="button" class="chip" data-value="1–3 months">1–3 months</button>
+                  <button type="button" class="chip" data-value="Just exploring">Just exploring</button>
+                </div>
+              </fieldset>
+            </div>
+
+            <div class="docket__col">
+              <div class="docket__rows">
+                <label class="docket__row">
+                  <span class="docket__label">04 &nbsp;Name</span>
+                  <input class="docket__input" type="text" name="name" autocomplete="name" placeholder="who's writing in" required />
+                </label>
+                <label class="docket__row">
+                  <span class="docket__label">05 &nbsp;Email</span>
+                  <input class="docket__input" type="email" name="email" autocomplete="email" placeholder="where we write back" required />
+                </label>
+                <label class="docket__row docket__row--area">
+                  <span class="docket__label">06 &nbsp;Brief</span>
+                  <textarea class="docket__input" name="brief" rows="4" maxlength="1200" placeholder="what are you building, and what's in the way?"></textarea>
+                </label>
+              </div>
+
+              <p class="docket__error" data-docket-error role="alert" hidden></p>
+
+              <button class="docket__stamp magnetic" type="submit" data-cursor="file it">
+                <span class="docket__stamp-label">File the docket</span>
+                <i aria-hidden="true">✳</i>
+              </button>
+
+              <p class="docket__fine">This opens your mail app with the docket written out — nothing leaves your machine until you press send there.</p>
+            </div>
+          </div>
+        </form>
+
+        <div class="docket__filed" data-docket-filed tabindex="-1" hidden>
+          <span class="docket__filed-stamp" aria-hidden="true">Filed</span>
+          <p class="docket__filed-note">Your mail app should be open with the docket filled in. Send it and we'll come back to you — usually inside two working days.</p>
+          <button type="button" class="docket__again" data-docket-again>Back to the docket</button>
+        </div>
+      </div>
 
       <div class="contact__main">
         <a class="contact__email magnetic" href="mailto:omentix.tech@gmail.com" data-cursor="write" data-scramble-hover>
@@ -350,6 +443,7 @@
           <span>Instagram</span><i aria-hidden="true">↗</i>
         </a>
       </div>
+
     </div>
 
     <div class="marquee marquee--foot" aria-hidden="true">
@@ -384,48 +478,124 @@
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
   <script src="main.js"></script>
 
-  <!-- hero background: React Bits CRT Warp, inked from the style.css tokens -->
-  <script type="importmap">
-    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }
-  </script>
-  <script type="module">
-    import createCRTWarp from './crt-warp.js';
-
-    const hero  = document.querySelector('.hero');
-    const mount = document.querySelector('.hero__crt');
-    const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  <!-- hero background: React Bits CRT Warp, inked from the style.css tokens.
+       Plain scripts, not modules — those are blocked when index.html is opened
+       straight off the disk, and this page gets opened that way. -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.min.js"></script>
+  <script src="crt-warp.js"></script>
+  <script src="root-film.js"></script>
+  <script src="pixel-swap.js"></script>
+  <script src="splash-cursor.js"></script>
+  <script>
+  (function(){
+    const token   = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const touch   = matchMedia('(hover: none), (pointer: coarse)').matches;
 
-    if (hero && mount){
+    /* One mount per tube. The pointer warp listens on the whole section, not
+       the canvas, so the type sitting above it still steers the waves. */
+    const mount = (section, sel, opts) => {
+      const el = section && section.querySelector(sel);
+      if (!el) return null;
       try {
-        createCRTWarp(mount, {
-          color: token('--violet'),         // the deep violet, not the lighter --violet-2
-          backgroundColor: token('--crt-black'),
-          speed: .35,               // unhurried
-          curvature: .25,
-          scanlineStrength: .35,
-          scanlineFrequency: 200,
-          waveAmplitude: .3,
-          waveFrequency: 2.5,
-          bloom: .9,                // a soft phosphor glow, short of blowing out
-          bloomRadius: 1,
-          noise: .07,               // grain lifts the black like an unlit tube
-          vignette: .3,             // bands dim toward the edge of the glass
-          brightness: .85,          // waves sit a shade under full violet so the type leads
-          pixelation: 1,
-          rgbShift: .012,           // a hair of phosphor fringing
-          mouseReact: !touch && !reduced,
-          mouseStrength: .5,
-          dpr: 1,
-          fps: reduced ? 2 : 30,
-          paused: reduced,
-        }, { eventTarget: hero });
-        hero.classList.add('has-crt');
+        const tube = createCRTWarp(el, opts, { eventTarget: section });
+        section.classList.add('has-crt');
+        return tube;
       } catch (err){
         console.warn('[omentix] CRT warp unavailable —', err);
+        return null;
       }
+    };
+
+    /* the hero tube is kept: main.js switches it off as the hero hands over
+       to the film (heroHandoff) */
+    window.heroTube = mount(document.querySelector('.hero'), '.hero__crt', {
+      color: token('--violet'),         // the deep violet, not the lighter --violet-2
+      backgroundColor: token('--crt-black'),
+      speed: .35,               // unhurried
+      curvature: .25,
+      scanlineStrength: .35,
+      scanlineFrequency: 200,
+      waveAmplitude: .3,
+      waveFrequency: 2.5,
+      bloom: .9,                // a soft phosphor glow, short of blowing out
+      bloomRadius: 1,
+      noise: .07,               // grain lifts the black like an unlit tube
+      vignette: .3,             // bands dim toward the edge of the glass
+      brightness: .85,          // waves sit a shade under full violet so the type leads
+      pixelation: 1,
+      rgbShift: .012,           // a hair of phosphor fringing
+      mouseReact: !touch && !reduced,
+      mouseStrength: .5,
+      dpr: 1,
+      fps: reduced ? 2 : 30,
+      paused: reduced,
+    });
+
+    /* The page closes on the tube it opened with — same shader, turned right
+       down: half the brightness, a slower drift and a much deeper vignette,
+       because here it sits behind a form that has to stay readable. Desktop
+       only. A second WebGL context is not worth a phone's battery, and the
+       printed ground (.contact__dots / __blot) is still there for it. */
+    if (!touch) mount(document.querySelector('.contact'), '.contact__crt', {
+      color: token('--violet'),
+      backgroundColor: token('--ink'),   // the section's own ground — no seam
+      speed: .22,
+      curvature: .18,
+      scanlineStrength: .16,
+      scanlineFrequency: 240,
+      waveAmplitude: .16,
+      waveFrequency: 1.6,
+      bloom: .45,
+      bloomRadius: 1,
+      noise: .05,
+      vignette: .72,            // corners fall right away so the docket keeps its edge
+      brightness: .28,          // a backdrop, not the subject — the form has to win
+      pixelation: 1,
+      rgbShift: .008,
+      mouseReact: !reduced,
+      mouseStrength: .35,
+      dpr: 1,
+      fps: reduced ? 2 : 24,
+      paused: reduced,
+    });
+
+    /* ---- the headline pixel swap --------------------------------------- */
+    const swap = document.querySelector('[data-pixel-swap]');
+    if (swap && typeof createPixelSwap === 'function') {
+      createPixelSwap(swap, {
+        trigger: 'click',
+        pattern: 'spiral',
+        pixelSize: 24,
+        duration: 900,
+        pixelSpin: 70,
+      });
     }
+
+    /* ---- the fluid cursor ----------------------------------------------
+       Dark sections only: `screen` blend over ink and CRT black reads as
+       light spilling across the tube, the same move over the cream paper
+       sections just turns them muddy. Off entirely on touch and on reduced
+       motion — it is a third WebGL context and a pointer effect besides, so
+       neither case has anything to gain from it.
+
+       The palette is written as literal hex because this solver parses hex
+       only, and --violet and friends resolve to oklch() wherever the browser
+       supports it. These are the same colours as the :root fallbacks. */
+    if (!touch && !reduced && typeof createSplashCursor === 'function') {
+      createSplashCursor({
+        zones: ['.hero', '.contact'],
+        PALETTE: ['#6D28D9', '#8B5CF6', '#C9B6F7', '#BD2EE7'],
+        COLOR_UPDATE_SPEED: 11,
+        DENSITY_DISSIPATION: 3,
+        VELOCITY_DISSIPATION: 2.2,
+        SPLAT_RADIUS: 0.16,      // a finer trail than the demo's
+        SPLAT_FORCE: 5200,
+        CURL: 2.5,
+        BACK_COLOR: { r: 0, g: 0, b: 0 },
+      });
+    }
+  })();
   </script>
 </body>
 </html>

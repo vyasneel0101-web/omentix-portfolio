@@ -56,6 +56,10 @@ function initSmoothScroll(){
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add((time) => lenis.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
+
+  // overflow:hidden only stops the user scrolling — Lenis scrolls in code, so
+  // a wheel over the preloader would still move the page hidden behind it
+  if (document.body.classList.contains('is-loading')) lenis.stop();
 }
 
 /* anchor links routed through Lenis so they ease instead of jumping */
@@ -187,13 +191,16 @@ function initChrome(){
     });
   }
 
+  /* A plain scroll check, not a ScrollTrigger onUpdate: a refresh (every
+     browser zoom step triggers one) rewinds the scroll to 0 to measure, and
+     the trigger could be left thinking the page was at the top — the pill
+     dropped away mid-page, leaving light nav text on the cream sections. */
   const nav = $('#nav');
   if (nav){
-    ScrollTrigger.create({
-      start: 'top -80',
-      end: 'max',
-      onUpdate: (self) => nav.classList.toggle('is-stuck', self.scroll() > 80),
-    });
+    const stick = () => nav.classList.toggle('is-stuck', window.scrollY > 80);
+    window.addEventListener('scroll', stick, { passive: true });
+    ScrollTrigger.addEventListener('refresh', stick);
+    stick();
   }
 }
 
@@ -270,10 +277,11 @@ function heroIntro(){
   placeHeroStroke();
 
   const stroke = $('.hero__stroke path', title);
-  const tl = gsap.timeline({ onComplete: initHeroGravity });
+  // built behind the preloader, started by revealSite()
+  const tl = gsap.timeline({ paused: true, onComplete: initHeroGravity });
 
   if (REDUCED){
-    gsap.set([chars, '.hero__row', '.hero__lede', '.marquee--seam'], { opacity: 1, y: 0 });
+    gsap.set([chars, '.hero__row', '.hero__lede'], { opacity: 1, y: 0 });
     if (stroke) gsap.set(stroke, { strokeDashoffset: 0 });
     return tl;
   }
@@ -282,7 +290,6 @@ function heroIntro(){
   gsap.set('.hero__row--top > *', { yPercent: 100, opacity: 0 });
   gsap.set('.hero__row--bottom > *', { y: 26, opacity: 0 });
   gsap.set('.hero__item', { y: 14, opacity: 0 });
-  gsap.set('.marquee--seam', { yPercent: 100, opacity: 0 });
   gsap.set('.nav > *', { y: -18, opacity: 0 });
 
   tl.to('.hero__row--top > *', {
@@ -302,10 +309,7 @@ function heroIntro(){
     }, '-=.75')
     .to('.hero__item', {
       y: 0, opacity: 1, duration: .7, stagger: .08, ease: EASE_ENTER,
-    }, '-=.7')
-    .to('.marquee--seam', {
-      yPercent: 0, opacity: 1, duration: 1, ease: EASE_ENTER,
-    }, '-=.85');
+    }, '-=.7');
 
   if (stroke){
     tl.to(stroke, {
@@ -383,8 +387,8 @@ function initHeroGravity(){
    6b · WORK TRAIL — project screenshots spawn along the cursor's path
    Progressive enhancement: the stage layout is switched on from here, so a
    touch device or a reduced-motion visitor keeps the plain section header
-   instead of a tall empty box. The screenshots are heavy (~4.7MB total), so
-   the nodes are only built once the section is one viewport away.
+   instead of a tall empty box. The screenshots are the same files as the
+   work section's own, which the preloader fetches and decodes up front.
    ========================================================================== */
 function initWorkTrail(){
   const stage = $('#work-stage');
@@ -418,13 +422,11 @@ function initWorkTrail(){
     });
   };
 
-  /* hold the 4.7MB of screenshots back until the section is one viewport away */
-  ScrollTrigger.create({ trigger: stage, start: 'top bottom+=100%', once: true, onEnter: build });
+  build();
 
   let idx = 0, z = 1, last = null;
 
   const spawn = (x, y) => {
-    build();   // safety net if the cursor arrives before the trigger fires
     const el = nodes[idx++ % nodes.length];
     gsap.killTweensOf(el);
     gsap.set(el, {
@@ -543,7 +545,7 @@ function initReveals(){
           }
           lines = build();
           gsap.set(lines, { yPercent: 0 });   // reveal already played
-          ScrollTrigger.refresh();
+          scheduleRefresh();
         }, 180);
       }).observe(el);
     }
@@ -646,146 +648,252 @@ function initContactScramble(){
 }
 
 /* ==========================================================================
-   8 · THE SCROLL FILM — video scrub + beat choreography
-   ================================================================= ======== */
-/* Where each root tip's violet cluster sits inside the FILM FRAME, as a
-   fraction of the video's own width/height. Measured off the frames that play
-   while beat (02) is up: the roots are still growing, so each tip travels — the
-   left one climbs 7% of the frame height across the beat. `from` is its
-   position as the beat fades in, `to` as it fades out; the tags lerp between
-   them on the same scrub so a stem never detaches from its cluster. */
-const ROOT_TIPS = {
-  'node--l': { from: [0.231, 0.666], to: [0.226, 0.592] },
-  'node--c': { from: [0.491, 0.867], to: [0.499, 0.800] },
-  'node--r': { from: [0.737, 0.609], to: [0.768, 0.599] },
-};
+   7b · THE DOCKET — work order → mailto
+   ──────────────────────────────────────
+   The site is a static file (it gets opened straight off the disk, see the
+   note at the foot of index.html), so there is no endpoint to post to. The
+   docket composes the enquiry into a mail draft and hands it to whatever
+   client the visitor has. That means the page never learns whether the mail
+   was actually sent — which is exactly why the confirmation says "filed"
+   and not "received". Don't upgrade that wording without a real backend.
 
-let tipK = 0;                       // 0 → 1 across beat (02)
-const nodeBox = new WeakMap();      // cached tag sizes; re-measured on resize
+   To move to one later, replace handOff() and nothing else.
+   ========================================================================== */
+const DOCKET_TO = 'omentix.tech@gmail.com';
 
-/* The film is object-fit:cover, so where the artwork lands on screen depends
-   on the viewport's aspect ratio: on a wide screen the frame is scaled to the
-   width and cropped top and bottom. Redo that maths here so each tag hangs off
-   its own root tip on any screen instead of drifting away from it.
-   Called with a number on every scrub tick, and bare on init/resize. */
-function placeNodes(k){
-  const stage = $('#pinned-container');
-  const video = $('#sequence-video');
-  if (!stage || !video || !video.videoWidth) return;
+/* OMX·YYMMDD·NNN — the date is the useful half, the suffix just keeps two
+   enquiries filed on the same day from carrying the same number. */
+function docketNumber(){
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  const stamp = `${p(d.getFullYear() % 100)}${p(d.getMonth() + 1)}${p(d.getDate())}`;
+  return `OMX·${stamp}·${String(Math.floor(Math.random() * 900) + 100)}`;
+}
 
-  if (typeof k === 'number') tipK = k;
-  else $$('.node').forEach((el) => nodeBox.set(el, { w: el.offsetWidth, h: el.offsetHeight }));
+/* Leader dots so the draft reads like the printed form it came from. */
+function docketLine(label, value){
+  const dots = '.'.repeat(Math.max(2, 22 - label.length));
+  return `${label} ${dots} ${value}`;
+}
 
-  const sw = stage.clientWidth, sh = stage.clientHeight;
-  const scale = Math.max(sw / video.videoWidth, sh / video.videoHeight);
-  const dw = video.videoWidth * scale, dh = video.videoHeight * scale;
-  const ox = (sw - dw) / 2, oy = (sh - dh) / 2;   // negative on the cropped axis
-  const PAD = 20;
+function handOff({ no, scope, budget, timeline, name, email, brief }){
+  const body = [
+    'OMENTIX — WORK ORDER',
+    no,
+    '',
+    docketLine('01 Scope',    scope.length ? scope.join(', ') : '—'),
+    docketLine('02 Budget',   budget   || '—'),
+    docketLine('03 Timeline', timeline || '—'),
+    docketLine('04 Name',     name),
+    docketLine('05 Email',    email),
+    '',
+    '06 Brief',
+    brief || '—',
+    '',
+  ].join('\r\n');
 
-  $$('.node').forEach((el) => {
-    const key = Object.keys(ROOT_TIPS).find((c) => el.classList.contains(c));
-    if (!key) return;
+  window.location.href = `mailto:${DOCKET_TO}`
+    + `?subject=${encodeURIComponent(`Work order ${no} — ${name}`)}`
+    + `&body=${encodeURIComponent(body)}`;
+}
 
-    // below 821px the tags stack into a plain list — leave them to the CSS
-    if (getComputedStyle(el).position !== 'absolute'){
-      el.style.removeProperty('--nx');
-      el.style.removeProperty('--ny');
-      gsap.set(el, { xPercent: 0 });
-      return;
+function initDocket(){
+  const form = $('#docket');
+  if (!form) return;
+
+  const wrap    = form.closest('.docket__wrap');
+  const filed   = $('[data-docket-filed]', wrap);
+  const errorEl = $('[data-docket-error]', form);
+  const stamp   = $('.docket__stamp', form);
+  const no      = docketNumber();
+
+  $('[data-docket-no]', form).textContent = no;
+
+  /* ---- stamp chips ---- */
+  const groups = $$('.docket__chips', form);
+  groups.forEach((group) => {
+    const multi = group.hasAttribute('data-multi');
+    const chips = $$('.chip', group);
+    chips.forEach((chip) => {
+      chip.setAttribute('aria-pressed', 'false');
+      chip.addEventListener('click', () => {
+        const on = chip.getAttribute('aria-pressed') === 'true';
+        if (!multi) chips.forEach((c) => c.setAttribute('aria-pressed', 'false'));
+        chip.setAttribute('aria-pressed', String(!on));
+      });
+    });
+  });
+
+  const picked = (key) => $$(`[data-chips="${key}"] .chip[aria-pressed="true"]`, form)
+    .map((c) => c.dataset.value);
+
+  /* ---- validation: only the two fields a reply actually needs ---- */
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+  const clear = (input) => {
+    input.removeAttribute('aria-invalid');
+    input.closest('.docket__row').removeAttribute('data-invalid');
+  };
+  const flag = (input, message) => {
+    input.setAttribute('aria-invalid', 'true');
+    input.closest('.docket__row').setAttribute('data-invalid', '');
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+    input.focus();
+    return false;
+  };
+
+  $$('.docket__input', form).forEach((input) => {
+    input.addEventListener('input', () => {
+      clear(input);
+      if (!$$('.docket__row[data-invalid]', form).length) errorEl.hidden = true;
+    });
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const name  = form.elements.name.value.trim();
+    const email = form.elements.email.value.trim();
+    const brief = form.elements.brief.value.trim();
+
+    errorEl.hidden = true;
+    $$('.docket__row[data-invalid]', form).forEach((r) => r.removeAttribute('data-invalid'));
+
+    if (!name)              return flag(form.elements.name,  'Line 04 — we need a name to write back to.');
+    if (!EMAIL.test(email)) return flag(form.elements.email, 'Line 05 — that address doesn’t look right.');
+
+    handOff({ no, scope: picked('scope'), budget: picked('budget')[0],
+              timeline: picked('timeline')[0], name, email, brief });
+
+    form.hidden = true;
+    filed.hidden = false;
+    filed.focus();
+
+    if (!REDUCED) {
+      gsap.fromTo($('.docket__filed-stamp', filed),
+        { scale: 1.7, opacity: 0, rotate: -26 },
+        { scale: 1, opacity: .92, rotate: -8, duration: .7, ease: EASE_ENTER });
     }
-
-    const { from, to } = ROOT_TIPS[key];
-    const nx = from[0] + (to[0] - from[0]) * tipK;
-    const ny = from[1] + (to[1] - from[1]) * tipK;
-
-    const box = nodeBox.get(el) || { w: el.offsetWidth, h: el.offsetHeight };
-    const w = box.w, h = box.h;
-    const tipX = ox + nx * dw;
-    const tipY = oy + ny * dh;
-
-    /* Hang the tag below its tip when there's room. The centre root ends near
-       the bottom of the frame, so on most screens there isn't — that one flips
-       above its tip and grows its stem downward instead. */
-    const below = tipY + h + PAD <= sh;
-    el.classList.toggle('is-above', !below);
-
-    const x = gsap.utils.clamp(w / 2 + PAD, sw - w / 2 - PAD, tipX);
-    const y = gsap.utils.clamp(PAD, sh - h - PAD, below ? tipY : tipY - h);
-
-    el.style.setProperty('--nx', x + 'px');
-    el.style.setProperty('--ny', y + 'px');
-    gsap.set(el, { xPercent: -50 });
-  });
-}
-
-function initFilm(video){
-  const stage = '#story-section';
-
-  // beats start hidden; each is revealed on its slice of the scrub
-  gsap.set('.beat', { opacity: 0 });
-  gsap.set('.beat__idx, .beat__line', { y: 34 });
-  gsap.set('.node', { y: 30, opacity: 0 });
-  placeNodes();
-  gsap.set('.beat--final > *', { y: 26, opacity: 0 });
-
-  // video scrubbing
-  ScrollTrigger.create({
-    trigger: stage,
-    start: 'top top',
-    end: '+=420%',
-    pin: '#pinned-container',
-    scrub: .35,
-    anticipatePin: 1,
-    animation: gsap.to(video, { currentTime: video.duration || 1, ease: 'none' }),
   });
 
-  // text choreography on the same timeline
-  const tl = gsap.timeline({
-    scrollTrigger: { trigger: stage, start: 'top top', end: '+=420%', scrub: .35 },
+  $('[data-docket-again]', wrap).addEventListener('click', () => {
+    filed.hidden = true;
+    form.hidden = false;
+    // the magnetic hover leaves a transform behind on a button that was
+    // hidden mid-hover; put it back on its mark
+    gsap.set(stamp, { x: 0, y: 0 });
+    form.elements.name.focus();
   });
 
-  // (01) origin
-  tl.to('#beat-1', { opacity: 1, duration: .05 }, .04)
-    .to('#beat-1 .beat__idx, #beat-1 .beat__line', { y: 0, duration: .06, stagger: .015 }, .05)
-    .to('#beat-1', { opacity: 0, duration: .04 }, .17)
-    .to('#beat-1 .beat__line', { y: -30, duration: .04 }, .17);
-
-  // (02) the three disciplines — the root tips grow into their violet
-  // clusters first; only once each cluster has landed does its word fade in
-  // beneath it, so the labels read as naming something already there.
-  const tip = { k: 0 };
-  tl.to('#beat-2', { opacity: 1, duration: .05 }, .26)
-    .to(tip, {
-      k: 1, duration: .08, ease: 'none',
-      onUpdate: () => placeNodes(tip.k),
-    }, .27)
-    .to('#beat-2 .node', { opacity: 1, y: 0, duration: .05, stagger: .015 }, .35)
-    .to('#beat-2', { opacity: 0, duration: .04 }, .45)
-    .to('#beat-2 .node', { y: -26, duration: .04, stagger: .012 }, .45);
-
-  // (03) method
-  tl.to('#beat-3', { opacity: 1, duration: .05 }, .52)
-    .to('#beat-3 .beat__idx, #beat-3 .beat__line', { y: 0, duration: .06, stagger: .015 }, .53)
-    .to('#beat-3', { opacity: 0, duration: .04 }, .66)
-    .to('#beat-3 .beat__line', { y: -30, duration: .04 }, .66);
-
-  // (05) the mark — video dissolves into the logo
-  tl.to('#sequence-video', { opacity: 0, duration: .06 }, .93)
-    .to('.story__vignette', { opacity: 0, duration: .06 }, .93)
-    .to('#beat-5', { opacity: 1, duration: .05 }, .93)
-    .to('.beat--final > *', { y: 0, opacity: 1, duration: .06, stagger: .015 }, .94);
-
-  ScrollTrigger.refresh();
-}
-
-/* reduced-motion / no-video fallback: show the final mark, skip the film */
-function filmFallback(){
-  gsap.set('.beat--final', { opacity: 1 });
-  gsap.set('.beat--final > *', { opacity: 1, y: 0 });
+  /* ---- reveal ---- */
+  if (!REDUCED) {
+    gsap.from(wrap, {
+      y: 40, opacity: 0, duration: .9, ease: EASE_ENTER,
+      scrollTrigger: { trigger: wrap, start: 'top 86%' },
+    });
+  }
 }
 
 /* ==========================================================================
-   9 · PRELOADER — real download progress, then the curtain lifts
+   8 · THE SCROLL FILM — root-film.js, scrubbed by the pin
+   The film draws itself and places its own copy (beats, service tags, the
+   closing mark); all this side does is pin the stage and hand it a 0–1
+   progress. Where WebGL is missing the section keeps its static mark
+   (.story without .has-film, see style.css).
+   ========================================================================== */
+let film = null;
+
+function initFilm(){
+  if (film) return;
+  const section = $('#story-section');
+  const stage   = $('#pinned-container');
+  if (!section || !stage || typeof createRootFilm !== 'function') return;
+
+  try {
+    film = createRootFilm(stage, { reduced: REDUCED });
+  } catch (err){
+    console.warn('[omentix] root film unavailable —', err);
+    return;
+  }
+  section.classList.add('has-film');
+
+  // reduced motion: the closing mark, drawn once, nothing pinned
+  if (REDUCED){ film.setProgress(1); return; }
+
+  heroHandoff(section);   // has to exist before the film's pin is measured
+
+  const scrub = { p: 0 };
+  film.setProgress(0);
+  gsap.to(scrub, {
+    p: 1, ease: 'none',
+    onUpdate: () => film.setProgress(scrub.p),
+    scrollTrigger: {
+      trigger: section,
+      start: 'top top',
+      end: '+=900%',        // seven chapters — about nine screens of scroll
+      pin: stage,
+      scrub: .35,
+      anticipatePin: 1,
+    },
+  });
+}
+
+/* The hand-off between the two tubes. The hero holds while its copy lifts
+   away, its CRT is crushed to a line and then to a dot (crt-warp.js
+   setCollapse), and the hero fades out leaving that dot burning dead centre
+   — exactly where the film opens on its seed, which then powers its own
+   screen on (root-film.js). The two backgrounds were always going to differ;
+   this makes the change read as one set switching off and the next one
+   switching on.
+
+   The film section is pulled up under the hero by the hero's own height, so
+   the film's pin starts on the very scroll position where the hero's ends. */
+const HANDOFF = '+=110%';
+
+function heroHandoff(section){
+  const hero = $('.hero');
+  if (!hero) return;
+  const tube = window.heroTube;
+
+  const overlap = () => { section.style.marginTop = `${-hero.offsetHeight}px`; };
+  overlap();
+  ScrollTrigger.addEventListener('refreshInit', overlap);
+
+  const tl = gsap.timeline({
+    defaults: { ease: 'none' },
+    scrollTrigger: { trigger: hero, start: 'top top', end: HANDOFF, pin: true, scrub: .35, anticipatePin: 1 },
+  });
+
+  // 1 · the copy lifts away, top row first, the headline a line at a time
+  const lift = [
+    ['.hero__row--top', 0],
+    ...$$('.hero__title .line').map((el, i) => [el, 1 + i]),
+    ['.hero__stroke', 2],
+    ['.hero__row--bottom', 3],
+  ];
+  lift.forEach(([target, i]) => {
+    tl.to(target, { y: -(70 + i * 16), opacity: 0, duration: .22, ease: 'power2.in' }, i * .04);
+  });
+  tl.to('.hero__rail', { opacity: 0, duration: .2 }, 0);
+
+  // 2 · the tube switches off: picture → line → dot
+  if (tube && tube.setCollapse){
+    const off = { k: 0 };
+    tl.to(off, { k: 1, duration: .74, onUpdate: () => tube.setCollapse(off.k) }, .16);
+  }
+
+  // 3 · the hero lets go; the dot is left on the film's seed
+  tl.to(hero, { opacity: 0, duration: .12 }, .88);
+}
+
+/* ==========================================================================
+   9 · PRELOADER — nothing is shown until everything is ready
+   The curtain only lifts once the fonts and every image are in and decoded,
+   all the heavy setup — text splitting, the film's pin, the refresh that
+   measures it — has run behind the loader, and the film has compiled its
+   shaders and drawn a frame. The intro then plays on an idle main thread
+   instead of sharing it with that work.
    ========================================================================== */
 function setProgress(pct){
   const t = $('#progress-text');
@@ -798,27 +906,54 @@ function setProgress(pct){
    background tabs, so a purely tween-driven reveal can hang the preloader
    forever. These make sure the site always ends up visible. */
 let siteShown = false;
-let filmReady = false;
+let revealing = false;
+let prepared  = false;
+let introTl   = null;
 
-function startFilm(video){
-  if (filmReady) return;
-  filmReady = true;
-  if (video && video.duration) initFilm(video);
-  else filmFallback();
+/* Everything that measures or rebuilds the page, run once while the loader
+   still covers it. SplitType freezes line breaks at measure time, so this has
+   to wait for the webfonts and full layout — boot() makes sure of that. */
+function prepareSite(){
+  if (prepared) return;
+  prepared = true;
+  initReveals();
+  initShotTilt();
+  initWorkTrail();
+  initContactScramble();
+  initFilm();
+  placeHeroStroke();
+  introTl = heroIntro();
 }
 
+const once = (target, type) => new Promise((resolve) => target.addEventListener(type, resolve, { once: true }));
+
+// capped by a timeout: rAF never fires in a background tab
+const nextFrames = (n) => new Promise((resolve) => {
+  const done = setTimeout(resolve, 250);
+  const step = () => {
+    if (--n > 0) return requestAnimationFrame(step);
+    clearTimeout(done);
+    resolve();
+  };
+  requestAnimationFrame(step);
+});
+
 /* hard fallback — skips the choreography and just shows the site */
-function forceReveal(video){
+function forceReveal(){
   if (siteShown) return;
   siteShown = true;
+
+  prepareSite();
+  if (introTl) introTl.kill();
 
   const loader  = $('#preloader');
   const curtain = $('.curtain');
   if (loader)  loader.style.display  = 'none';
   if (curtain) curtain.style.display = 'none';
   document.body.classList.remove('is-loading');
+  if (lenis) lenis.start();
 
-  gsap.set('.hero__row--top > *, .hero__row--bottom > *, .hero__item, .marquee--seam, .nav > *',
+  gsap.set('.hero__row--top > *, .hero__row--bottom > *, .hero__item, .nav > *',
            { opacity: 1, y: 0, yPercent: 0 });
   const chars = $$('.hero__title .char');
   if (chars.length) gsap.set(chars, { opacity: 1, yPercent: 0, rotate: 0 });
@@ -828,20 +963,14 @@ function forceReveal(video){
   if (stroke) gsap.set(stroke, { strokeDashoffset: 0 });
   initHeroGravity();
 
-  startFilm(video);
   ScrollTrigger.refresh();
 }
 
-function revealSite(video){
-  if (siteShown) return;
+function revealSite(){
+  if (siteShown || revealing) return;
+  revealing = true;
 
-  const tl = gsap.timeline({
-    onComplete: () => {
-      siteShown = true;
-      document.body.classList.remove('is-loading');
-      ScrollTrigger.refresh();
-    },
-  });
+  const tl = gsap.timeline({ onComplete: () => { siteShown = true; } });
 
   tl.to('.loader__inner', { y: -30, opacity: 0, duration: .6, ease: EASE_EXIT })
     .set('#preloader', { display: 'none' })
@@ -852,97 +981,134 @@ function revealSite(video){
       stagger: { each: .07, from: 'start' },
     }, '-=.1')
     .set('.curtain', { display: 'none' })
-    .add(heroIntro(), '-=.55');
-
-  tl.add(() => startFilm(video), '-=1.2');
+    // the page is already measured, and the reserved scrollbar gutter means
+    // unlocking scroll changes no widths — nothing needs refreshing here
+    .add(() => {
+      document.body.classList.remove('is-loading');
+      if (lenis) lenis.start();
+    })
+    .add(introTl.paused(false), '-=.55');
 }
 
-function boot(){
-  const video    = $('#sequence-video');
-  const isMobile = window.innerWidth < 768;
-  const src      = isMobile ? 'Video_Scrub_HQ_Mobile.mp4' : 'Video_Scrub_HQ_Desktop.mp4';
+async function boot(){
+  // the intro is choreographed from the top of the page
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
 
-  // Reduced motion: no film at all, straight to a static page.
+  const pageReady = (document.readyState === 'complete' ? Promise.resolve() : once(window, 'load'))
+    .then(() => (document.fonts ? document.fonts.ready : null));
+
+  // Reduced motion: no loader choreography, straight to a static page.
   if (REDUCED){
     setProgress(100);
     $('#preloader').style.display = 'none';
     $('.curtain').style.display = 'none';
     document.body.classList.remove('is-loading');
-    filmFallback();
+    await pageReady;
+    prepareSite();
+    ScrollTrigger.refresh();
     return;
   }
-
-  // setTimeout, not gsap.delayedCall — the GSAP ticker stops with rAF in
-  // background tabs, which would strand the visitor on the preloader.
-  const start = () => {
-    if (video.dataset.ready) return;
-    video.dataset.ready = '1';
-    video.pause();
-    setProgress(100);
-    setTimeout(() => revealSite(video), 350);
-  };
-
-  const fail = (why) => {
-    console.warn('[omentix] film unavailable —', why);
-    setProgress(100);
-    setTimeout(() => revealSite(null), 200);
-  };
 
   // watchdog: whatever happens, never leave someone staring at a loader
   setTimeout(() => {
-    if (!siteShown) forceReveal(video.duration ? video : null);
-  }, 12000);
+    if (!siteShown && !revealing) forceReveal();
+  }, 20000);
 
-  video.addEventListener('loadedmetadata', start);
-  video.addEventListener('error', () => fail('video error'));
-
-  // file:// blocks XHR — load the video directly and fake the progress bar
-  if (window.location.protocol === 'file:'){
-    gsap.to({ v: 0 }, {
-      v: 92, duration: 1.6, ease: 'power1.out',
-      onUpdate() { setProgress(this.targets()[0].v); },
-    });
-    video.src = src;
-    video.load();
-    if (video.readyState >= 1) start();
-    return;
-  }
-
-  // http(s): stream the file so the counter reflects a real download
-  const xhr = new XMLHttpRequest();
-  xhr.open('GET', src, true);
-  xhr.responseType = 'blob';
-
+  // the counter eases between real milestones rather than jumping to them
   const shown = { v: 0 };
-  xhr.onprogress = (e) => {
-    if (!e.lengthComputable) return;
-    const pct = (e.loaded / e.total) * 96;      // leave headroom for decode
-    gsap.to(shown, {
-      v: pct, duration: .4, ease: 'power2.out', overwrite: true,
-      onUpdate: () => setProgress(shown.v),
-    });
-  };
+  const report = (pct) => gsap.to(shown, {
+    v: pct, duration: .5, ease: 'power2.out', overwrite: true,
+    onUpdate: () => setProgress(shown.v),
+  });
+  report(12);
 
-  xhr.onload = function(){
-    if (this.status !== 200) return fail('http ' + this.status);
-    video.src = URL.createObjectURL(this.response);
-    video.load();
-    if (video.readyState >= 1) start();
-  };
+  await pageReady;                       // scripts, stylesheets, fonts
+  report(45);
 
-  xhr.onerror = () => fail('network');
-  xhr.send();
+  // every image on the page decoded, not just fetched, so nothing pops in
+  // or costs a frame the first time it scrolls into view
+  await Promise.all($$('img').map((img) => (img.decode ? img.decode().catch(() => {}) : null)));
+  if (siteShown) return;                 // the watchdog got there first
+  report(72);
+
+  prepareSite();
+  ScrollTrigger.refresh();
+  $$('.trail__img').forEach((img) => img.decode && img.decode().catch(() => {}));
+  if (film) film.warm();                 // shader compiles land here, not on first scroll
+  report(92);
+
+  // let that layout, its first paint and the GPU uploads land first
+  await nextFrames(3);
+  gsap.killTweensOf(shown);
+  setProgress(100);
+
+  // setTimeout, not gsap.delayedCall — the GSAP ticker stops with rAF in
+  // background tabs, which would strand the visitor on the preloader.
+  setTimeout(revealSite, 350);
 }
 
 /* ==========================================================================
-   10 · DEBOUNCED ScrollTrigger.refresh() ON RESIZE
+   10 · RESIZE AND BROWSER ZOOM
+   A zoom step is a resize: the page reflows to a new height and the film's
+   pin grows or shrinks with the viewport. ScrollTrigger's refresh keeps the
+   old scroll offset in pixels, which on the reflowed page is somewhere else
+   entirely — zooming dropped people a section, or a whole film beat, away
+   from where they were. So remember what was on screen, as a position inside
+   the block at the top of the viewport, and put that back after the refresh.
    ========================================================================== */
-let resizeTimer;
+ScrollTrigger.config({ autoRefreshEvents: 'visibilitychange,DOMContentLoaded,load' });  // resize is handled below
+
+const ANCHOR_SEL = 'section, .shead, .feat, .proj, .docket__wrap, .contact__main';
+let anchor = null;
+let holdAnchor = false;   // from the first resize until the page is put back
+let anchorTimer, refreshTimer;
+
+function takeAnchor(){
+  if (holdAnchor) return;
+  let best = null;
+  // later in document order = more deeply nested, so the most specific wins
+  for (const el of $$(ANCHOR_SEL)){
+    const r = el.getBoundingClientRect();
+    if (r.top <= 0 && r.bottom > 0 && r.height) best = { el, frac: -r.top / r.height };
+  }
+  anchor = best;
+}
+
+function restoreAnchor(){
+  if (!anchor || !anchor.el.isConnected) return;
+  const r = anchor.el.getBoundingClientRect();
+  const y = Math.round(window.scrollY + r.top + anchor.frac * r.height);
+  if (Math.abs(y - window.scrollY) < 2) return;
+  if (lenis){
+    lenis.resize();   // its own re-measure is debounced — without this it clamps to the old page height
+    lenis.scrollTo(y, { immediate: true, force: true });
+  }
+  else window.scrollTo(0, y);
+  ScrollTrigger.update();
+}
+
+/* one refresh for everything that needs one — a resize, a zoom step, a
+   SplitType re-wrap — with the reader put back where they were */
+function scheduleRefresh(){
+  holdAnchor = true;
+  clearTimeout(anchorTimer);
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    ScrollTrigger.refresh();
+    restoreAnchor();
+    holdAnchor = false;
+  }, 180);
+}
+
+window.addEventListener('scroll', () => {
+  clearTimeout(anchorTimer);
+  anchorTimer = setTimeout(takeAnchor, 120);   // once the scroll settles
+}, { passive: true });
+
 window.addEventListener('resize', () => {
   placeHeroStroke();
-  placeNodes();
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => ScrollTrigger.refresh(), 250);
+  scheduleRefresh();
 });
 
 /* ==========================================================================
@@ -953,27 +1119,5 @@ initAnchors();
 initCursor();
 initMagnetic();
 initChrome();
-
-/* Line splitting must wait for BOTH the webfonts and full layout: SplitType
-   freezes line breaks at measure time, so measuring early bakes in wrong wraps. */
-function whenSettled(fn){
-  const run = () => setTimeout(fn, 0);
-  const afterFonts = () => {
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
-    else run();
-  };
-  if (document.readyState === 'complete') afterFonts();
-  else window.addEventListener('load', afterFonts, { once: true });
-}
-
-whenSettled(() => {
-  initReveals();
-  initShotTilt();
-  initWorkTrail();
-  initContactScramble();
-  placeHeroStroke();
-  ScrollTrigger.refresh();
-});
-
-window.addEventListener('load', () => ScrollTrigger.refresh());
+initDocket();
 boot();

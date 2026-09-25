@@ -40,9 +40,7 @@
   --accent:  'Sentient', Georgia, serif;
   --mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* scroll-film only — deliberately distinct from the rest of the site */
-  --film-display: 'Zodiak', var(--display);
-  --film-accent:  'Zodiak', var(--accent);
+  /* scroll-film only: the service tags */
   --node-font:    'Bricolage Grotesque', var(--display);
 
   /* ---- Rhythm ---- */
@@ -91,7 +89,17 @@
    ========================================================================== */
 *,*::before,*::after{ margin:0; padding:0; box-sizing:border-box; }
 
-html{ -webkit-text-size-adjust:100%; scrollbar-width:thin; scrollbar-color:var(--violet) var(--paper-2); }
+/* The preloader locks scroll with overflow:hidden, which takes the scrollbar
+   away. Without a reserved gutter the page gets narrower the moment the lock
+   lifts, every canvas on it resizes, and resizing a WebGL canvas wipes its
+   buffer: the hero's CRT went black for a frame just as the intro finished.
+   The ink under the gutter keeps that strip dark while the loader is up. */
+html{
+  -webkit-text-size-adjust:100%;
+  scrollbar-width:thin; scrollbar-color:var(--violet) var(--paper-2);
+  scrollbar-gutter:stable;
+  background:var(--ink);
+}
 
 body{
   background:var(--paper);
@@ -676,8 +684,6 @@ em{
 }
 .marquee__track b{ color:var(--violet); font-weight:400; padding:0 .5rem; }
 
-/* lives inside the dark hero but prints on paper — don't inherit its light ink */
-.marquee--seam{ color:var(--ink); }
 @keyframes marq{ to{ transform:translateX(-50%); } }
 
 .marquee--foot{
@@ -689,141 +695,102 @@ em{
 .marquee--foot .marquee__track b{ color:var(--violet-3); }
 
 /* ==========================================================================
-   STORY — pinned scroll film (LAYOUT UNTOUCHED — typography only)
+   STORY — the root film (root-film.js)
+   A live 3D scene on the same lit tube as the hero: CRT black, violet
+   phosphor, the hero's plasma behind it. The copy here rides on top; the
+   script sets each piece's opacity and, for the tags, its position.
    ========================================================================== */
 .story{ position:relative; width:100%; z-index:1; }
 
 .story__stage{
   position:relative; width:100vw; height:100svh; overflow:hidden;
-  background:var(--paper);
+  background:var(--crt-black);
+  color:var(--paper);
+}
+.film__canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; z-index:0; }
+
+/* the hero's twelve column rules, carried on through the film */
+.story__cols{
+  position:absolute; inset:0 var(--gut); z-index:1; pointer-events:none;
+  background-image:repeating-linear-gradient(to right, rgba(243,234,218,.045) 0 1px, transparent 1px calc(100% / 12));
+  -webkit-mask-image:linear-gradient(to bottom, transparent, #000 14%, #000 80%, transparent);
+          mask-image:linear-gradient(to bottom, transparent, #000 14%, #000 80%, transparent);
 }
 
-#sequence-video{
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  object-fit:cover; z-index:1;
+/* ---- beats: one line of copy per chapter ------------------------------- */
+.film-beat{
+  position:absolute; z-index:3;
+  left:var(--gut); right:var(--gut);
+  top:calc(var(--gut) + 4.5rem);
+  max-width:34rem;
+  opacity:0; visibility:hidden; pointer-events:none;
 }
-
-.story__vignette{
-  position:absolute; inset:0; z-index:2; pointer-events:none;
-  background:
-    radial-gradient(ellipse at center,rgba(243,234,218,0) 32%,rgba(243,234,218,.55) 78%),
-    linear-gradient(to bottom,rgba(243,234,218,.85) 0%,rgba(243,234,218,0) 22%);
-}
-
-.beat{
-  position:absolute; inset:0; z-index:3;
-  pointer-events:none; opacity:0;
-  display:flex;
-  padding:var(--gut);
-}
-.beat--center{ flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-
-.beat--center::before{
-  content:"";
-  position:absolute; left:50%; top:50%;
-  width:min(1000px,86vw); height:min(440px,52vh);
-  transform:translate(-50%,-50%);
-  background:radial-gradient(ellipse at center,
-    rgba(243,234,218,.94) 0%, rgba(243,234,218,.82) 42%, rgba(243,234,218,0) 72%);
-  pointer-events:none;
-}
-.beat--center > *{ position:relative; }
-
-/* Typography refinements for the scroll-film beats */
-.beat__idx{
-  margin-bottom:clamp(1.4rem,3vh,2.2rem); opacity:.85; color:var(--violet);
-  font-family:var(--mono); font-size:.88rem; letter-spacing:.14em; font-weight:500;
-}
-
-.beat__line{
-  font-family:var(--film-display); font-weight:700;
-  font-size:clamp(2.2rem,5.8vw,5.2rem);
-  line-height:1.02; letter-spacing:-.01em;
-  max-width:16ch;
-}
-.beat__line em{
-  font-family:var(--film-accent); font-weight:700;
-  font-size:1.05em;
-}
-
-/* --- service nodes — specimen tags pinned under the root tips -------------
-   No cards. Each label hangs from the violet cluster its root grew into, on a
-   hairline stem, the way a botanical plate names what it draws. JS puts them
-   in place: the film is object-fit:cover, so the artwork's position on screen
-   depends on the viewport's aspect ratio and cannot be hard-coded in CSS. */
-.beat--nodes{ align-items:center; justify-content:center; }
-
-.node{
-  position:absolute;
-  left:var(--nx,50%); top:var(--ny,50%);
-  width:max-content; max-width:min(24ch,26vw);
-  margin:0; padding:0;
-  display:flex; flex-direction:column; align-items:center;
-  text-align:center;
-  /* ink on paper — the halo only shows where a root line runs behind. Stacked
-     densely because the small copy is thin and the roots it crosses are black. */
-  text-shadow:0 0 16px var(--paper), 0 0 12px var(--paper), 0 0 8px var(--paper),
-              0 0 5px var(--paper), 0 0 3px var(--paper), 0 0 2px var(--paper),
-              0 0 1px var(--paper);
-}
-
-/* the stem that ties the tag to its cluster */
-.node__stem{
-  width:1px; height:clamp(20px,3.6vh,38px);
-  background:linear-gradient(to bottom, var(--violet), var(--violet-3));
-  margin-bottom:.7rem;
-}
-/* flipped by JS when a tip sits too low for its tag to hang beneath it —
-   `order` moves only the stem, so the reading hierarchy stays put */
-.node.is-above .node__stem{
-  order:1;
-  margin-bottom:0; margin-top:.7rem;
-  background:linear-gradient(to top, var(--violet), var(--violet-3));
-}
-
-.node__idx{
-  font-family:var(--mono); font-weight:500;
-  font-size:.7rem; letter-spacing:.22em;
-  color:var(--violet);
-  margin-bottom:.5rem;
-}
-
-.node__title{
-  font-family:var(--node-font);
-  font-weight:700;
-  font-size:clamp(1.5rem,2.5vw,2.3rem);
-  line-height:1.08; letter-spacing:-.015em;
-  margin:0 0 .5rem;
-}
-.node__title::after{
-  content:""; display:block;
-  width:26px; height:1px; margin:.65rem auto 0;
-  background:var(--rule);
-}
-.node__desc{
-  font-size:clamp(.86rem,.82rem + .15vw,.98rem);
-  line-height:1.5; opacity:.88;
-  max-width:22ch;
-}
-
-/* --- final mark --- */
-.beat--final{
-  flex-direction:column; align-items:center; justify-content:center; text-align:center;
-  gap:.4rem;
-  background:radial-gradient(circle at center,rgba(243,234,218,.35) 0%,var(--paper) 72%);
-}
-.final__mark{ width:clamp(68px,10vw,110px); height:auto; margin-bottom:1.4rem; }
-.final__word{
+.film-beat__idx{ display:block; margin-bottom:1rem; color:var(--violet-3); opacity:.85; }
+.film-beat__line{
   font-family:var(--display); font-weight:700;
-  font-size:clamp(3rem,9vw,7.5rem);
+  font-size:clamp(1.9rem,3.8vw,3.1rem);
+  line-height:.98; letter-spacing:-.03em;
+  text-wrap:balance;
+  text-shadow:0 0 30px rgba(18,17,24,.9);
+}
+.film-beat__line em{
+  font-family:var(--accent); font-style:italic; font-weight:500;
+  font-size:1.05em; letter-spacing:-.005em;
+  color:var(--violet-3);
+}
+/* wide screens: the copy takes the left column, the tree the rest */
+@media (min-width:1100px){
+  .film-beat{ top:50%; max-width:min(25vw,23rem); margin-top:-4rem; }
+}
+
+/* ---- tags hung under the three service nodes --------------------------- */
+.film-tag{
+  position:absolute; z-index:3; left:0; top:0; margin:0;
+  width:max-content; max-width:22ch;
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  opacity:0; visibility:hidden; pointer-events:none;
+  text-shadow:0 0 12px var(--crt-black), 0 0 4px var(--crt-black);
+}
+.film-tag__stem{
+  width:1px; height:clamp(12px,2.2vh,22px); margin-bottom:.45rem;
+  background:linear-gradient(var(--violet-2), transparent);
+}
+.film-tag__idx{ font-family:var(--mono); font-size:.64rem; letter-spacing:.22em; color:var(--violet-3); }
+.film-tag__title{
+  margin:.3rem 0 .25rem;
+  font-family:var(--node-font); font-weight:700;
+  font-size:clamp(1rem,1.6vw,1.4rem);
+  line-height:1.05; letter-spacing:-.02em;
+}
+.film-tag__desc{ font-size:.82rem; line-height:1.4; opacity:.66; max-width:22ch; }
+
+/* ---- the closing mark --------------------------------------------------- */
+.film-word{
+  position:absolute; z-index:3; left:50%; top:72%;
+  display:flex; flex-direction:column; align-items:center; gap:.7rem;
+  text-align:center;
+  opacity:0; visibility:hidden;
+  transform:translateX(-50%);
+}
+.film-word__mark{ display:none; width:clamp(68px,10vw,110px); height:auto; margin-bottom:1rem; }
+.film-word__name{
+  font-family:var(--display); font-weight:700;
+  font-size:clamp(2.6rem,6.4vw,5.4rem);
   line-height:.88; letter-spacing:-.04em;
+  text-shadow:0 0 40px rgba(139,92,246,.45);
 }
-.final__tag{
-  font-family:var(--mono); font-size:.78rem; font-weight:500;
-  letter-spacing:.24em; text-transform:uppercase;
-  opacity:.6; margin-bottom:2rem;
+.film-word__tag{ opacity:.6; }
+.film-word__cta{ margin-top:.8rem; color:var(--paper); }
+.film-word__cta:hover{ color:var(--violet-3); }
+
+/* no WebGL, or reduced motion without a film: the closing mark alone */
+.story:not(.has-film) .film-beat,
+.story:not(.has-film) .film-tag{ display:none; }
+.story:not(.has-film) .film-word{
+  opacity:1; visibility:visible;
+  top:50%; transform:translate(-50%,-50%);
 }
+.story:not(.has-film) .film-word__mark{ display:block; }
 
 /* ==========================================================================
    WORK — editorial redesign
@@ -1184,13 +1151,31 @@ em{
   background:radial-gradient(circle,rgba(109,40,217,.4),transparent 66%);
   filter:blur(70px);
 }
+/* CRT bookend — the tube the page opened with, turned right down. Mounted
+   from index.html (desktop only), it paints --ink, the same ground .contact
+   sits on, so the layer fades up on its first real frame with no seam.
+   It comes after .contact__ground/__aura in the DOM at the same z-index, so
+   it simply paints over them; :has() then drops them for good once it's live
+   (guarded that way, not on .has-crt, so there is no dark flash in between). */
+.contact__crt{
+  position:absolute; inset:0; z-index:0;
+  overflow:hidden; pointer-events:none;
+  opacity:0;
+  transition:opacity 1.6s var(--ease-enter);
+}
+.contact__crt.is-live{ opacity:1; }
+
+.contact:has(.contact__crt.is-live) .contact__dots,
+.contact:has(.contact__crt.is-live) .contact__blot,
+.contact:has(.contact__crt.is-live) .contact__aura{ display:none; }
+
 .contact__inner{ position:relative; z-index:2; padding:0 var(--gut); }
 
 .contact__title{
   font-family:var(--display); font-weight:700;
-  font-size:clamp(3rem,10vw,9rem);
-  line-height:.88; letter-spacing:-.045em;
-  margin:1.2rem 0 clamp(1.5rem,4vh,2.4rem);
+  font-size:clamp(2.5rem,7vw,6.4rem);
+  line-height:.9; letter-spacing:-.04em;
+  margin:0;
 }
 .contact__title em{
   color:var(--violet-3); font-size:1.06em;
@@ -1239,6 +1224,283 @@ em{
 .contact__ig:hover{ opacity:1; border-color:var(--violet-3); }
 .contact__ig i{ font-style:normal; }
 
+/* ==========================================================================
+   THE DOCKET — the enquiry as a printed work order
+   ──────────────────────────────────────────────────
+   A mailto in a trench coat. Mono field numbers, dashed rules and stamp
+   chips, sat on frosted glass so the tube behind it still reads through.
+   Everything here is markup the visitor fills in; nothing posts anywhere.
+   ========================================================================== */
+.docket__wrap{ position:relative; }
+
+.docket{
+  position:relative;
+  display:flex; flex-direction:column;
+  gap:clamp(1.1rem,2.4vh,1.6rem);
+  padding:clamp(1.4rem,3vw,2.1rem);
+  border:1px solid var(--rule-inv);
+  background:rgba(16,16,36,.5);
+  -webkit-backdrop-filter:blur(10px) saturate(1.1);
+          backdrop-filter:blur(10px) saturate(1.1);
+}
+/* display:flex above outranks the UA's [hidden]{display:none} — without
+   this the form stays on screen underneath the filed stamp */
+.docket[hidden]{ display:none; }
+
+.docket__body{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:clamp(1.5rem,4vw,3rem);
+  align-items:start;
+}
+.docket__col{
+  display:flex; flex-direction:column;
+  gap:clamp(1.1rem,2.4vh,1.6rem);
+  min-width:0;
+}
+
+.docket__head{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:1rem; padding-bottom:.9rem;
+  border-bottom:1px solid var(--rule-inv);
+}
+.docket__no{
+  font-family:var(--mono); font-size:.66rem;
+  letter-spacing:.16em; text-transform:uppercase;
+  color:var(--violet-3); opacity:.85; white-space:nowrap;
+}
+
+/* ---- stamp chips ------------------------------------------------------- */
+.docket__set{ border:0; padding:0; margin:0; min-width:0; }
+.docket__legend{
+  display:flex; align-items:baseline; gap:.7em;
+  padding:0 0 .65rem;
+  font-family:var(--mono); font-size:.64rem;
+  letter-spacing:.14em; text-transform:uppercase; opacity:.55;
+}
+.docket__hint{
+  font-style:normal; text-transform:none;
+  letter-spacing:.08em; opacity:.6;
+}
+
+.docket__chips{ display:flex; flex-wrap:wrap; gap:.5rem; }
+
+.chip{
+  font-family:var(--mono); font-size:.68rem;
+  letter-spacing:.08em; text-transform:uppercase;
+  color:var(--paper); background:transparent;
+  padding:.52rem .8rem;
+  border:1px solid var(--rule-inv); border-radius:2px;
+  opacity:.7; cursor:pointer;
+  transition:opacity var(--dur-fast) var(--ease-hover),
+             border-color var(--dur-fast) var(--ease-hover),
+             color var(--dur-fast) var(--ease-hover),
+             transform var(--dur-fast) var(--ease-hover);
+}
+.chip:hover{ opacity:1; border-color:var(--violet-3); }
+
+/* selected chips land a shade crooked, the way a hand stamp does */
+.chip[aria-pressed="true"]{
+  opacity:1; color:var(--violet-3); border-color:var(--violet-3);
+  box-shadow:inset 0 0 0 1px rgba(201,182,247,.3);
+  transform:rotate(-1.2deg);
+}
+.chip:nth-child(even)[aria-pressed="true"]{ transform:rotate(1deg); }
+
+/* ---- ruled fields ------------------------------------------------------ */
+.docket__rows{ display:flex; flex-direction:column; }
+.docket__row{
+  display:grid; grid-template-columns:auto minmax(0,1fr);
+  align-items:baseline; gap:.9rem;
+  padding:.8rem 0;
+  border-bottom:1px dashed var(--rule-inv);
+  transition:border-color var(--dur-fast) var(--ease-hover);
+  cursor:text;
+}
+.docket__row--area{ align-items:start; }
+.docket__row:focus-within{ border-bottom-color:var(--violet-3); }
+.docket__row[data-invalid]{ border-bottom-color:rgba(255,145,145,.75); }
+
+.docket__label{
+  font-family:var(--mono); font-size:.64rem;
+  letter-spacing:.14em; text-transform:uppercase;
+  opacity:.55; white-space:nowrap;
+}
+.docket__input{
+  width:100%; min-width:0;
+  font-family:var(--text); font-size:.96rem; line-height:1.55;
+  color:var(--paper); background:transparent;
+  border:0; padding:0; resize:vertical;
+}
+.docket__input::placeholder{ color:var(--paper); opacity:.3; }
+.docket__input:focus{ outline:none; }
+
+.chip:focus-visible,
+.docket__stamp:focus-visible,
+.docket__again:focus-visible,
+.docket__input:focus-visible{
+  outline:2px solid var(--focus-ring); outline-offset:3px;
+}
+
+/* ---- the send stamp ---------------------------------------------------- */
+.docket__error{
+  margin:0; font-family:var(--mono); font-size:.66rem;
+  letter-spacing:.08em; color:rgba(255,160,160,.95);
+}
+.docket__error[hidden]{ display:none; }
+
+.docket__stamp{
+  align-self:flex-start;
+  display:inline-flex; align-items:center; gap:.7rem;
+  font-family:var(--mono); font-size:.7rem;
+  letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink); background:var(--paper);
+  padding:.9rem 1.5rem;
+  border:1.5px solid var(--paper); border-radius:100px;
+  cursor:pointer; will-change:transform;
+  transition:background-color var(--dur-base) var(--ease-hover),
+             border-color var(--dur-base) var(--ease-hover);
+}
+.docket__stamp:hover{ background:var(--violet-3); border-color:var(--violet-3); }
+.docket__stamp i{
+  font-style:normal;
+  transition:transform var(--dur-base) var(--ease-hover);
+}
+.docket__stamp:hover i{ transform:rotate(90deg); }
+
+.docket__fine{
+  margin:0; max-width:44ch;
+  font-family:var(--mono); font-size:.6rem;
+  letter-spacing:.06em; line-height:1.7; opacity:.38;
+}
+
+/* ---- filed --------------------------------------------------------------
+   Honest wording on purpose: a mailto hands the draft to a mail client and
+   hears nothing back, so the page can only claim the docket was written —
+   never that it arrived. */
+.docket__filed{
+  display:flex; flex-direction:column; align-items:flex-start;
+  gap:1.4rem; padding:clamp(2rem,4.5vw,3rem);
+  border:1px solid var(--rule-inv);
+  background:rgba(16,16,36,.5);
+  -webkit-backdrop-filter:blur(10px) saturate(1.1);
+          backdrop-filter:blur(10px) saturate(1.1);
+}
+.docket__filed[hidden]{ display:none; }
+
+.docket__filed-stamp{
+  display:inline-block;
+  font-family:var(--display); font-weight:700;
+  font-size:clamp(2.4rem,6vw,4rem);
+  letter-spacing:-.02em; text-transform:uppercase;
+  color:var(--violet-3);
+  padding:.06em .28em;
+  border:3px solid var(--violet-3); border-radius:5px;
+  transform:rotate(-8deg); transform-origin:left center;
+  opacity:.92;
+}
+.docket__filed-note{
+  margin:0; max-width:40ch;
+  opacity:.7; line-height:1.65;
+  font-size:clamp(.95rem,.92rem + .2vw,1.05rem);
+}
+.docket__again{
+  font-family:var(--mono); font-size:.66rem;
+  letter-spacing:.12em; text-transform:uppercase;
+  color:var(--paper); background:transparent;
+  padding:.4em 0; border:0;
+  border-bottom:1px solid var(--rule-inv);
+  opacity:.6; cursor:pointer;
+  transition:opacity var(--dur-base) var(--ease-hover),
+             border-color var(--dur-base) var(--ease-hover);
+}
+.docket__again:hover{ opacity:1; border-bottom-color:var(--violet-3); }
+
+/* ==========================================================================
+   PIXEL SWAP — the contact headline
+   ─────────────────────────────────
+   Upstream stacks both layers with position:absolute and needs an
+   aspect-ratio to give the box a height. A headline has no aspect ratio, so
+   here the layers share one grid cell instead and the container takes the
+   height of the taller of the two. pixel-swap.js pins its clones to match.
+   ========================================================================== */
+.contact__swap{
+  position:relative; isolation:isolate; overflow:hidden;
+  display:grid; width:100%;
+  margin:1.2rem 0 clamp(1.5rem,4vh,2.4rem);
+  cursor:pointer; outline:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.contact__swap:focus-visible{ outline:2px solid var(--focus-ring); outline-offset:4px; }
+
+/* Both layers fill the cell rather than sitting at its top: the two lines
+   wrap to different heights, and the container is sized by the taller, so a
+   start-aligned short panel would leave a tinted void under itself. */
+.contact__swap > .pixel-swap__layer{
+  grid-area:1 / 1; align-self:stretch; width:100%;
+}
+.pixel-swap__layer[data-visible='false']{ visibility:hidden; }
+
+.pixel-swap__grid{ position:absolute; inset:0; z-index:3; pointer-events:none; }
+.pixel-swap__pixel{ position:absolute; overflow:hidden; opacity:0; contain:paint; }
+.pixel-swap__pixel-content{ position:absolute; }
+
+/* Ink and violet rather than the demo's black and white, and both a good way
+   short of opaque — the CRT has to stay legible through the pixels, which is
+   the whole reason the swap sits over it. */
+.contact__panel{
+  /* the extra foot keeps the last line of type clear of the swap hint,
+     which the headline runs straight into once it wraps on a phone */
+  padding:clamp(1.1rem,2.6vw,2rem) clamp(1.1rem,2.6vw,1.8rem) clamp(2.5rem,4vw,2.8rem);
+  border:1px solid var(--rule-inv-2);
+}
+.contact__panel--ink{    background:rgba(16,16,36,.38); }
+.contact__panel--violet{ background:rgba(109,40,217,.28); }
+
+/* a click that rewrites the headline needs to look clickable */
+.contact__swap-hint{
+  position:absolute; z-index:4; right:.9rem; bottom:.7rem;
+  font-family:var(--mono); font-size:.6rem;
+  letter-spacing:.16em; text-transform:uppercase;
+  color:var(--paper); opacity:.32; pointer-events:none;
+  transition:opacity var(--dur-base) var(--ease-hover);
+}
+.contact__swap:hover .contact__swap-hint{ opacity:.7; }
+.contact__swap[data-transitioning] .contact__swap-hint{ opacity:0; }
+
+.contact__title--alt{
+  font-family:var(--display); font-weight:700;
+  font-size:clamp(2.5rem,7vw,6.4rem);
+  line-height:.9; letter-spacing:-.04em;
+  margin:0;
+}
+.contact__title--alt em{
+  font-family:var(--accent); font-style:italic;
+  color:var(--violet-3); font-size:1.06em;
+}
+
+/* ==========================================================================
+   SPLASH CURSOR
+   One fixed canvas over the whole viewport, faded in only while a dark
+   section is on screen (splash-cursor.js toggles .is-on). It blends in
+   `screen`, so it adds light to the ink and the tube and never darkens
+   anything. It sits under all the chrome — nav is 8000, the ring cursor
+   9500 — so neither gets washed out by it.
+   ========================================================================== */
+.splash-cursor{
+  position:fixed; inset:0; z-index:40;
+  pointer-events:none;
+  mix-blend-mode:screen;
+  opacity:0;
+  transition:opacity .8s var(--ease-enter);
+}
+.splash-cursor.is-on{ opacity:.85; }
+.splash-cursor canvas{ width:100vw; height:100vh; display:block; }
+
+@media (prefers-reduced-motion: reduce){
+  .splash-cursor{ display:none; }
+}
+
 /* --- footer --- */
 .foot{
   position:relative; z-index:2;
@@ -1270,11 +1532,13 @@ em{
   .proj--flip .proj__text{ order:1; }
   .proj--flip .proj__shots{ order:2; }
   .shead__inner{ grid-template-columns:1fr; align-items:start; }
-  .node--l,.node--r{ top:22%; }
 
   .hero__rail{ display:none; }
   .hero__edition{ display:none; }
   .contact__rail{ display:none; }
+
+  /* the work order stacks: stamp chips first, then the fields */
+  .docket__body{ grid-template-columns:1fr; }
 }
 
 /* short viewports — keep the whole press sheet on one screen */
@@ -1311,15 +1575,9 @@ em{
   .feat__shots{ grid-template-columns:1fr; }
   .shead__note{ border-left:none; padding-left:0; }
 
-  /* not enough room to hang a tag off each root tip — stack them instead */
-  .beat--nodes{
-    flex-direction:column; align-items:center; justify-content:center;
-    gap:clamp(1.3rem,4vh,2.4rem);
-  }
-  .node{ position:relative; left:auto; top:auto; max-width:26ch; }
-  .node__stem{ height:16px; margin-bottom:.45rem; }
-  .node__title{ font-size:clamp(1.3rem,4.6vw,1.7rem); }
-  .node__desc{ font-size:.85rem; }
+  /* tags stay on their nodes; the descriptions drop to keep them narrow */
+  .film-tag{ max-width:12ch; }
+  .film-tag__desc{ display:none; }
 
   .foot{ grid-template-columns:1fr; text-align:center; gap:1.2rem; }
   .foot__col--mid,.foot__col--end{ align-items:center; text-align:center; }
@@ -1328,7 +1586,7 @@ em{
 
 @media (max-width:520px){
   .hero__row--top{ flex-direction:column; align-items:flex-start; gap:.5rem; }
-  .beat__line{ max-width:14ch; }
+  .film-beat__line{ max-width:14ch; }
 }
 
 /* ==========================================================================
@@ -1342,11 +1600,8 @@ em{
   }
   .grain{ display:none; }
   .cursor{ display:none !important; }
-  .story__stage{ height:auto; min-height:60vh; }
-  #sequence-video{ display:none; }
-  .beat{ position:relative; inset:auto; opacity:1 !important; }
-  .beat--center,.beat--nodes{ display:none; }
-  .beat--final{ display:flex; background:transparent; padding:4rem var(--gut); }
+  /* the film is drawn once at its closing mark and not pinned (main.js) */
+  .film-word{ opacity:1 !important; visibility:visible !important; }
   .hero__title .char,.line__in{ transform:none !important; opacity:1 !important; }
   .hero__stroke path{ stroke-dashoffset:0; }
 }
