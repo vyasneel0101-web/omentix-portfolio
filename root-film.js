@@ -12,6 +12,7 @@
      const film = createRootFilm(stageEl, { reduced });
      film.setProgress(0…1);   // main.js drives this from the pinned ScrollTrigger
      film.warm();             // compile shaders + draw once, behind the preloader
+     film.setLeaves({ style, density, petals });   // 'sakura' | 'none' · sparse | medium | lush · falling petals on/off
 
    The stage supplies its own overlay copy: .film-beat[data-in][data-out],
    three .film-tag (Web / App / AI, in that order) and one .film-word.
@@ -20,7 +21,7 @@
 (function (global){
 'use strict';
 
-function createRootFilm(stage, { reduced = false } = {}){
+function createRootFilm(stage, { reduced = false, leaves: leafOptions = { style: 'sakura', density: 'medium', petals: true } } = {}){
   if (!global.THREE) throw new Error('root-film.js: three.js has to load first');
   const REDUCED = reduced;
 
@@ -563,6 +564,202 @@ function createRootFilm(stage, { reduced = false } = {}){
       }`)));
   }
 
+  /* ---- sakura: pixel blossoms and falling petals ---------------------------
+     Blossoms sit in small clusters spiralled around every canopy branch
+     (golden-angle phyllotaxis, bunched toward the tips). Each is a flat,
+     slightly cupped quad whose flower is drawn in the fragment shader as
+     pixel art on a 15×15 grid of CRT cells: five notched petals, a deep
+     centre, a ring of stamens, gutters between cells and the odd twinkle.
+     They open with a small spin as their branch grows past them, flutter,
+     and at "pulling in" tumble off into the core. Petals fall through the
+     canopy on a breeze while it's in bloom. All of it moves on the GPU:
+     blossoms are one instanced draw, petals one point draw. */
+  const blossomGeo = (() => {
+    const N = 4, pos = [], uv = [], idx = [];
+    for (let i = 0; i <= N; i++){
+      for (let j = 0; j <= N; j++){
+        const x = i / N * 2 - 1, y = j / N * 2 - 1;
+        pos.push(x, y, (x * x + y * y) * .14);   // petals cup up a little
+        uv.push(x, y);
+      }
+    }
+    for (let i = 0; i < N; i++){
+      for (let j = 0; j < N; j++){
+        const a = i * (N + 1) + j, b = a + 1, c = a + N + 1, d = c + 1;
+        idx.push(a, c, b, b, c, d);
+      }
+    }
+    const g = new T3.BufferGeometry();
+    g.setAttribute('position', new T3.Float32BufferAttribute(pos, 3));
+    g.setAttribute('aUV', new T3.Float32BufferAttribute(uv, 2));
+    g.setIndex(idx);
+    return g;
+  })();
+
+  const blossomMat = new T3.ShaderMaterial({
+    uniforms: { uP: U.uP, uTime: U.uTime, uHub: U.uHub, uPulse: U.uPulse },
+    side: T3.DoubleSide,
+    vertexShader: `
+      attribute vec2 aUV; attribute vec4 aLeaf;   // opens at, letting-go delay, phase, rnd
+      uniform float uP, uTime; uniform vec3 uHub;
+      varying vec2 vUV; varying float vBud, vSeed;
+      void main(){
+        float g = clamp((uP - aLeaf.x) / .04, 0., 1.);
+        float gs = g <= 0. ? 0. : 1. + 2.2 * pow(g - 1., 3.) + 1.2 * pow(g - 1., 2.);   // open, a touch of overshoot
+        float k = clamp((uP - .555 - aLeaf.y) / .09, 0., 1.);
+        k = k * k * (3. - 2. * k);
+        vec3 p = position;
+        // spin open, then flutter; tumble once it lets go
+        float sp = (1. - g) * 1.4 + aLeaf.z;
+        p.xy = vec2(cos(sp) * p.x - sin(sp) * p.y, sin(sp) * p.x + cos(sp) * p.y);
+        float a = sin(uTime * (1.1 + aLeaf.w) + aLeaf.z) * .14 + k * 3. * (aLeaf.w - .5);
+        p.yz = vec2(cos(a) * p.y - sin(a) * p.z, sin(a) * p.y + cos(a) * p.z);
+        p *= gs * (1. - k);
+        vec3 wp = (modelMatrix * instanceMatrix * vec4(p, 1.)).xyz;
+        float an = aLeaf.z + k * 5.;
+        wp = mix(wp, uHub, k) + vec3(cos(an), sin(an * .7) * .4, sin(an)) * sin(k * 3.1416) * (.4 + aLeaf.w * .5);
+        vUV = aUV; vBud = step(aLeaf.w, .16); vSeed = aLeaf.z;
+        gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.);
+      }`,
+    fragmentShader: `
+      uniform float uTime, uPulse;
+      varying vec2 vUV; varying float vBud, vSeed;
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      void main(){
+        const float N = 15.;
+        vec2 g = (vUV * .5 + .5) * N;
+        vec2 cell = floor(g), fr = fract(g);
+        vec2 c = (cell + .5) / N * 2. - 1.;          // this cell's centre, -1..1
+        float r = length(c);
+        float th = atan(c.y, c.x) + vSeed;
+        float f = fract(th * 5. / 6.2832) - .5;      // across one petal, -.5..5
+        float R = mix(.6, .98, pow(cos(f * 3.1416), .7));   // five rounded petals
+        R -= .24 * exp(-pow(f / .07, 2.));           // the sakura notch at each tip
+        R = mix(R, .46, vBud);                       // buds stay closed
+        if (r > R) discard;
+        vec3 pale = vec3(1.08, .76, .96), deep = vec3(.96, .36, .76);
+        vec3 col = mix(deep, pale, smoothstep(.12, .72, r / R));
+        col = mix(col, vec3(.7, .38, 1.1), step(R - .15, r) * .4);    // a violet rim keeps it in the brand
+        float stamen = step(abs(r - .3), .07) * step(.55, fract(th * 16. / 6.2832)) * (1. - vBud);
+        col = mix(col, vec3(1.35, 1.12, .92), stamen);
+        if (r < .15) col = vec3(1.25, .55, .9);
+        float gutter = step(.1, fr.x) * step(.1, fr.y);
+        float twinkle = step(.94, hash(cell + floor(uTime * 2. + vSeed * 9.)));
+        col *= (.7 + .3 * gutter) * (1. + twinkle * .7) * (1. + uPulse) * 1.25;
+        gl_FragColor = vec4(col, 1.);
+      }`,
+  });
+
+  const petalMat = new T3.ShaderMaterial({
+    uniforms: { uP: U.uP, uTime: U.uTime, uHub: U.uHub, uDpr: U.uDpr, uH: U.uH },
+    transparent: true, depthWrite: false, blending: T3.AdditiveBlending,
+    vertexShader: `
+      attribute vec3 aHome; attribute vec4 aPet;   // phase, speed, spin, rnd
+      uniform float uP, uTime, uDpr, uH; uniform vec3 uHub;
+      varying float vA, vRot;
+      void main(){
+        float cyc = fract(aPet.x + uTime * aPet.y);
+        vec3 p = aHome;
+        p.y -= cyc * 3.;
+        p.x += sin(uTime * .7 + aPet.w * 20.) * .35 * cyc + cyc * .7;   // a breeze, drifting right
+        p.z += cos(uTime * .5 + aPet.w * 13.) * .3 * cyc;
+        float k = smoothstep(.56, .68, uP);
+        p = mix(p, uHub, k);
+        vec4 mv = modelViewMatrix * vec4(p, 1.);
+        gl_PointSize = (70. + aPet.w * 50.) * uDpr * uH / (-mv.z * 900.);
+        gl_Position = projectionMatrix * mv;
+        float on = smoothstep(.09, .15, uP) * (1. - k);
+        vA = on * smoothstep(0., .08, cyc) * smoothstep(-.05, .35, p.y);   // gone before they reach the ground
+        vRot = aPet.z * uTime + aPet.w * 6.2832;
+      }`,
+    fragmentShader: `
+      varying float vA, vRot;
+      void main(){
+        vec2 q = gl_PointCoord * 2. - 1.;
+        q = vec2(cos(vRot) * q.x - sin(vRot) * q.y, sin(vRot) * q.x + cos(vRot) * q.y);
+        q = (floor((q * .5 + .5) * 7.) + .5) / 7. * 2. - 1.;   // 7×7 pixels
+        if (length(q * vec2(1.5, 1.)) > .95 || (q.y > .5 && abs(q.x) < .2)) discard;   // oval, notched tip
+        vec3 col = mix(vec3(1.08, .76, .96), vec3(.96, .38, .78), q.y * -.5 + .5);
+        gl_FragColor = vec4(col * vA * 1.1, 1.);
+      }`,
+  });
+
+  const LEAF_DENSITY = { sparse: 6, medium: 11, lush: 17 };   // blossom anchors per unit of branch length
+
+  function buildBlossoms(density){
+    const r = rng(424242);
+    const per = (LEAF_DENSITY[density] || LEAF_DENSITY.medium) * Q.parts * .55;
+    const hosts = branches.filter((b) => b.kind === 1 && b.depth >= 1);
+    const mats = [], data = [], homes = [];
+    const m4 = new T3.Matrix4(), q = new T3.Quaternion(), sc = new T3.Vector3();
+    const up = V(0, 1, 0);
+    hosts.forEach((b, hi) => {
+      const n = Math.max(1, Math.round(b.len * per * (b.depth === 3 ? 1.3 : 1)));
+      for (let i = 0; i < n; i++){
+        const t = .3 + .7 * Math.sqrt((i + r()) / n);             // bunched toward the tip
+        const A = bez(b.P, t);
+        const Tn = bezTan(b.P, t);
+        const N = new T3.Vector3().crossVectors(Tn, b.ref).normalize();
+        const B = new T3.Vector3().crossVectors(Tn, N);
+        const phi = i * 2.39996 + hi + r() * .5;                    // golden angle
+        const O = N.clone().multiplyScalar(Math.cos(phi)).addScaledVector(B, Math.sin(phi));
+        const cluster = 1 + Math.floor(r() * 3);                    // sakura bloom in twos and threes
+        for (let c = 0; c < cluster; c++){
+          const stalk = .05 + r() * .08;
+          const pos = A.clone().addScaledVector(O, lerp(b.r0, b.r1, t) + stalk)
+            .add(V(r() - .5, r() - .5, r() - .5).multiplyScalar(.1));
+          const Z = O.clone().multiplyScalar(.8).addScaledVector(Tn, .3).addScaledVector(up, .55).normalize();
+          const X = new T3.Vector3().crossVectors(Math.abs(Z.y) > .95 ? V(1, 0, 0) : up, Z).normalize();
+          const Y = new T3.Vector3().crossVectors(Z, X);
+          q.setFromRotationMatrix(m4.makeBasis(X, Y, Z));
+          const size = (b.depth === 3 ? .13 : .15) * (.8 + r() * .45);
+          mats.push(new T3.Matrix4().compose(pos, q, sc.set(size, size, size)));
+          data.push(b.win[0] + (b.win[1] - b.win[0]) * t + .01 + c * .006, r() * .09, r() * 6.2832, r());
+          homes.push(pos);
+        }
+      }
+    });
+    return { mats, data, homes };
+  }
+
+  function buildPetals(homes, count){
+    const r = rng(8081);
+    const home = new Float32Array(count * 3), pet = new Float32Array(count * 4);
+    for (let i = 0; i < count; i++){
+      homes[Math.floor(r() * homes.length)].toArray(home, i * 3);
+      pet[i * 4] = r();
+      pet[i * 4 + 1] = .05 + r() * .06;
+      pet[i * 4 + 2] = (r() - .5) * 3;
+      pet[i * 4 + 3] = r();
+    }
+    const g = new T3.BufferGeometry();
+    g.setAttribute('position', new T3.BufferAttribute(new Float32Array(count * 3), 3));
+    g.setAttribute('aHome', new T3.BufferAttribute(home, 3));
+    g.setAttribute('aPet', new T3.BufferAttribute(pet, 4));
+    const pts = new T3.Points(g, petalMat);
+    pts.frustumCulled = false;
+    return pts;
+  }
+
+  let blossoms = null, petals = null;
+  function setLeaves({ style = 'sakura', density = 'medium', petals: withPetals = true } = {}){
+    if (blossoms){ world.remove(blossoms); blossoms.geometry.dispose(); blossoms = null; }
+    if (petals){ world.remove(petals); petals.geometry.dispose(); petals = null; }
+    if (style !== 'sakura') return;
+    const { mats, data, homes } = buildBlossoms(density);
+    const geo = blossomGeo.clone();
+    geo.setAttribute('aLeaf', new T3.InstancedBufferAttribute(new Float32Array(data), 4));
+    blossoms = new T3.InstancedMesh(geo, blossomMat, mats.length);
+    mats.forEach((m, i) => blossoms.setMatrixAt(i, m));
+    blossoms.frustumCulled = false;
+    world.add(blossoms);
+    if (withPetals){
+      petals = buildPetals(homes, Math.round(260 * Q.parts));
+      world.add(petals);
+    }
+  }
+  setLeaves(leafOptions);
+
   /* ---- the ground: a phosphor grid that splits when the roots break it --- */
   const ground = new T3.Mesh(new T3.PlaneGeometry(40, 40, 1, 1), new T3.ShaderMaterial({
     uniforms: { ...U, uCrack: { value: 0 }, uRipple: { value: 0 }, uRippleA: { value: 0 }, uFade: { value: 1 } },
@@ -859,6 +1056,7 @@ function createRootFilm(stage, { reduced = false } = {}){
 
   return {
     canvas,
+    setLeaves(options){ setLeaves(options); if (REDUCED) renderFrame(); },
     setProgress(p){
       progress = clamp01(p);
       if (REDUCED) renderFrame();
